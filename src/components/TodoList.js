@@ -1,0 +1,212 @@
+import React, { useState } from 'react';
+import { ListGroup, Button, Badge } from 'react-bootstrap';
+import { useTodoContext } from '../contexts/TodoContext';
+import TodoItem from './TodoItem';
+import TodoForm from './TodoForm';
+import { getAllTodos } from '../utils/db';
+
+const TodoList = () => {
+  const { 
+    todos, 
+    loading, 
+    error, 
+    networkStatus, 
+    syncPending,
+    exportToCsv,
+    refreshTodos,
+    checkConnection
+  } = useTodoContext();
+  
+  const [filter, setFilter] = useState('all'); // 'all', 'active', 'completed'
+  const [showForm, setShowForm] = useState(false);
+  const [debugInfo, setDebugInfo] = useState('');
+  
+  // Filter todos based on current filter
+  const filteredTodos = todos.filter(todo => {
+    if (filter === 'active') return !todo.completed;
+    if (filter === 'completed') return todo.completed;
+    return true; // 'all'
+  });
+  
+  // Sort todos by timestamp (newest first)
+  const sortedTodos = [...filteredTodos].sort((a, b) => b.timestamp - a.timestamp);
+
+  // Function to check IndexedDB directly
+  const checkIndexedDB = async () => {
+    try {
+      const todosFromDB = await getAllTodos();
+      setDebugInfo(`Found ${todosFromDB.length} todos in IndexedDB: ${JSON.stringify(todosFromDB)}`);
+      console.log('Todos from IndexedDB:', todosFromDB);
+      
+      // Refresh todos from IndexedDB
+      refreshTodos();
+    } catch (error) {
+      setDebugInfo(`Error: ${error.message}`);
+      console.error('Error checking IndexedDB:', error);
+    }
+  };
+
+  return (
+    <div className="todo-list">
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <div>
+          <h2>
+            My Todo List &nbsp;
+            <span className="network-status h6">
+              {networkStatus ? (
+                <Badge bg="success">
+                  <i className="bi bi-wifi me-1"></i> <span className="badge-text">Online</span>
+                </Badge>
+              ) : (
+                <Badge bg="warning text-dark">
+                  <i className="bi bi-wifi-off me-1"></i> <span className="badge-text">Offline</span>
+                </Badge>
+              )}
+              {syncPending && (
+                <Badge bg="info" className="ms-2">
+                  <i className="bi bi-arrow-repeat me-1"></i> <span className="badge-text">Sync Pending</span>
+                </Badge>
+              )}
+            </span>
+            {/* <Button 
+              variant="link" 
+              className="p-0 ms-2 text-muted" 
+              onClick={checkConnection}
+              title="Check connection"
+              style={{ fontSize: '0.8rem' }}
+            >
+              <i className="bi bi-arrow-clockwise"></i>
+            </Button> */}
+          </h2>
+        </div>
+        <div>
+          <Button 
+            variant="primary" 
+            onClick={() => setShowForm(!showForm)}
+            className="me-2 btn-icon-text"
+            title={showForm ? "Cancel" : "Add Todo"}
+          >
+            {showForm ? (
+              <>
+                <i className="bi bi-x-lg"></i>
+                <span className="btn-text">Cancel</span>
+              </>
+            ) : (
+              <>
+                <i className="bi bi-plus-lg"></i>
+                <span className="btn-text">Add Todo</span>
+              </>
+            )}
+          </Button>
+          <Button 
+            variant="outline-secondary" 
+            onClick={exportToCsv}
+            disabled={todos.length === 0}
+            className="btn-icon-text"
+            title="Export as CSV"
+          >
+            <i className="bi bi-download"></i>
+            <span className="btn-text">Export CSV</span>
+          </Button>
+          {process.env.NODE_ENV === 'development' && (
+            <Button 
+              variant="outline-info" 
+              onClick={checkIndexedDB}
+              className="ms-2 btn-icon-text"
+              title="Debug IndexedDB"
+            >
+              <i className="bi bi-bug"></i>
+              <span className="btn-text">Debug</span>
+            </Button>
+          )}
+        </div>
+      </div>
+      
+      {/* Debug Information */}
+      {debugInfo && (
+        <div className="alert alert-info mb-3" style={{ wordBreak: 'break-all' }}>
+          <small>{debugInfo}</small>
+          <button 
+            type="button" 
+            className="btn-close float-end" 
+            onClick={() => setDebugInfo('')}
+            aria-label="Close"
+          ></button>
+        </div>
+      )}
+      
+      {/* Todo Form */}
+      {showForm && (
+        <div className="mb-4">
+          <TodoForm onComplete={() => setShowForm(false)} />
+        </div>
+      )}
+      
+      {/* Filter buttons */}
+      <div className="mb-3 d-flex gap-2">
+        <Button 
+          variant={filter === 'all' ? 'primary' : 'outline-primary'} 
+          onClick={() => setFilter('all')}
+          className="btn-icon-text"
+        >
+          <i className="bi bi-collection"></i>
+          <span className="btn-text">All</span>
+        </Button>
+        <Button 
+          variant={filter === 'active' ? 'primary' : 'outline-primary'} 
+          onClick={() => setFilter('active')}
+          className="btn-icon-text"
+        >
+          <i className="bi bi-circle"></i>
+          <span className="btn-text">Active</span>
+        </Button>
+        <Button 
+          variant={filter === 'completed' ? 'primary' : 'outline-primary'} 
+          onClick={() => setFilter('completed')}
+          className="btn-icon-text"
+        >
+          <i className="bi bi-check-circle"></i>
+          <span className="btn-text">Completed</span>
+        </Button>
+      </div>
+      
+      {/* Error message */}
+      {error && (
+        <div className="alert alert-danger">
+          <i className="bi bi-exclamation-triangle-fill me-2"></i>
+          {error}
+        </div>
+      )}
+      
+      {/* Loading indicator */}
+      {loading && (
+        <div className="text-center">
+          <div className="spinner-border" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </div>
+        </div>
+      )}
+      
+      {/* Todo items */}
+      <ListGroup>
+        {sortedTodos.length > 0 ? (
+          sortedTodos.map(todo => (
+            <TodoItem key={todo.id} todo={todo} />
+          ))
+        ) : (
+          <div className="text-center py-4">
+            <i className="bi bi-inbox display-1 text-muted"></i>
+            <p className="text-muted mt-3">No todos found.</p>
+            <p className="text-muted">
+              {filter !== 'all' 
+                ? `Try switching to a different filter or add a new todo.` 
+                : `Click the "Add Todo" button to get started.`}
+            </p>
+          </div>
+        )}
+      </ListGroup>
+    </div>
+  );
+};
+
+export default TodoList; 
