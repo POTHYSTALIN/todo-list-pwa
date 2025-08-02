@@ -69,7 +69,7 @@ const TodoList = () => {
       <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
           <h2>
-            My Todo List &nbsp;
+            My Todos &nbsp;
             <span className="network-status h6">
               {networkStatus ? (
                 <Badge bg="success">

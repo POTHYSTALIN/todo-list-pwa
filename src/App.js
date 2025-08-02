@@ -33,7 +33,7 @@ function App() {
         return 'Categories';
       case 'todos':
       default:
-        return 'Todo List';
+        return 'Todos';
     }
   };
 
