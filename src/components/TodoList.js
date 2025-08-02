@@ -18,7 +18,7 @@ const TodoList = () => {
   } = useTodoContext();
   
   const [filter, setFilter] = useState('active'); // 'all', 'active', 'completed'
-  const [sortBy, setSortBy] = useState('timestamp'); // 'timestamp', 'priority', 'title'
+  const [sortBy, setSortBy] = useState('priority'); // 'timestamp', 'priority', 'title'
   const [showForm, setShowForm] = useState(false);
   const [debugInfo, setDebugInfo] = useState('');
   
