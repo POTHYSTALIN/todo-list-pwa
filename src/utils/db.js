@@ -2,7 +2,39 @@ import { openDB } from 'idb';
 
 // Database name and version
 const DB_NAME = 'todo-list-db';
-const DB_VERSION = 2; // Increment version to trigger upgrade
+const DB_VERSION = 3; // Increment version to trigger upgrade
+
+// Default categories
+const DEFAULT_CATEGORIES = [
+  {
+    id: 1,
+    name: 'Work',
+    description: 'Tasks related to your professional work',
+    color: 'primary',
+    count: 5
+  },
+  {
+    id: 2,
+    name: 'Personal',
+    description: 'Personal tasks and errands',
+    color: 'success',
+    count: 3
+  },
+  {
+    id: 3,
+    name: 'Shopping',
+    description: 'Shopping lists and purchases',
+    color: 'warning',
+    count: 2
+  },
+  {
+    id: 4,
+    name: 'Health',
+    description: 'Health and fitness related tasks',
+    color: 'info',
+    count: 1
+  }
+];
 
 // Initialize the database
 export const initDB = async () => {
@@ -10,7 +42,7 @@ export const initDB = async () => {
     upgrade(db, oldVersion, newVersion) {
       console.log(`Upgrading database from version ${oldVersion} to ${newVersion}`);
       
-      // Create the object store if it doesn't exist
+      // Create the todos object store if it doesn't exist
       if (!db.objectStoreNames.contains('todos')) {
         console.log('Creating todos object store');
         const store = db.createObjectStore('todos', {
@@ -18,13 +50,24 @@ export const initDB = async () => {
           autoIncrement: true,
         });
         
-        // Create all indexes for new stores
+        // Create all indexes for todos store
         store.createIndex('completed', 'completed');
         store.createIndex('timestamp', 'timestamp');
         store.createIndex('priority', 'priority');
       }
-      // For existing stores, the priority index will be added automatically
-      // when we try to access it, so we don't need to handle it here
+
+      // Create the categories object store if it doesn't exist
+      if (!db.objectStoreNames.contains('categories')) {
+        console.log('Creating categories object store');
+        const categoriesStore = db.createObjectStore('categories', {
+          keyPath: 'id',
+          autoIncrement: true,
+        });
+        
+        // Create indexes for categories store
+        categoriesStore.createIndex('name', 'name');
+        categoriesStore.createIndex('color', 'color');
+      }
     },
   });
   
@@ -126,6 +169,82 @@ export const getTodosByStatus = async (completed) => {
   const index = store.index('completed');
   const todos = await index.getAll(completed);
   return todos;
+};
+
+// Category functions
+export const addCategory = async (category) => {
+  try {
+    const db = await initDB();
+    const tx = db.transaction('categories', 'readwrite');
+    const store = tx.objectStore('categories');
+    const categoryWithTimestamp = {
+      ...category,
+      timestamp: new Date().getTime(),
+    };
+    console.log('Adding category to IndexedDB:', categoryWithTimestamp);
+    const id = await store.add(categoryWithTimestamp);
+    await tx.done;
+    console.log('Category added successfully with ID:', id);
+    return id;
+  } catch (error) {
+    console.error('Error adding category to IndexedDB:', error);
+    throw error;
+  }
+};
+
+export const getAllCategories = async () => {
+  try {
+    const db = await initDB();
+    const tx = db.transaction('categories', 'readonly');
+    const store = tx.objectStore('categories');
+    const categories = await store.getAll();
+    console.log('Retrieved categories from IndexedDB:', categories);
+    
+    // If no categories exist, add default categories
+    if (categories.length === 0) {
+      console.log('No categories found, adding default categories...');
+      const defaultTx = db.transaction('categories', 'readwrite');
+      const defaultStore = defaultTx.objectStore('categories');
+      
+      for (const category of DEFAULT_CATEGORIES) {
+        await defaultStore.add(category);
+      }
+      await defaultTx.done;
+      console.log('Default categories added successfully');
+      
+      // Return the default categories
+      return DEFAULT_CATEGORIES;
+    }
+    
+    return categories;
+  } catch (error) {
+    console.error('Error getting categories from IndexedDB:', error);
+    return [];
+  }
+};
+
+export const getCategory = async (id) => {
+  const db = await initDB();
+  const tx = db.transaction('categories', 'readonly');
+  const store = tx.objectStore('categories');
+  const category = await store.get(id);
+  return category;
+};
+
+export const updateCategory = async (category) => {
+  const db = await initDB();
+  const tx = db.transaction('categories', 'readwrite');
+  const store = tx.objectStore('categories');
+  await store.put(category);
+  await tx.done;
+};
+
+export const deleteCategory = async (id) => {
+  const db = await initDB();
+  const tx = db.transaction('categories', 'readwrite');
+  const store = tx.objectStore('categories');
+  await store.delete(id);
+  await tx.done;
 };
 
 // Export todos as CSV
