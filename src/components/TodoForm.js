@@ -6,6 +6,7 @@ const TodoForm = ({ onComplete }) => {
   const { addTodo } = useTodoContext();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [priority, setPriority] = useState('Medium');
   const [validated, setValidated] = useState(false);
 
   const handleSubmit = async (event) => {
@@ -21,6 +22,7 @@ const TodoForm = ({ onComplete }) => {
     const newTodo = {
       title: title.trim(),
       description: description.trim(),
+      priority: priority,
       completed: false,
     };
 
@@ -30,6 +32,7 @@ const TodoForm = ({ onComplete }) => {
       // Reset form
       setTitle('');
       setDescription('');
+      setPriority('Medium');
       setValidated(false);
       
       // Call onComplete callback if provided
@@ -76,6 +79,23 @@ const TodoForm = ({ onComplete }) => {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
             />
+          </Form.Group>
+
+          <Form.Group className="mb-3" controlId="todoPriority">
+            <Form.Label>
+              <i className="bi bi-flag me-1"></i>
+              Priority
+            </Form.Label>
+            <Form.Select
+              value={priority}
+              onChange={(e) => setPriority(e.target.value)}
+            >
+              <option value="Highest">Highest</option>
+              <option value="High">High</option>
+              <option value="Medium">Medium</option>
+              <option value="Low">Low</option>
+              <option value="Very Low">Very Low</option>
+            </Form.Select>
           </Form.Group>
 
           <div className="d-flex justify-content-end">

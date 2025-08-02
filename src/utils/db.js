@@ -2,25 +2,29 @@ import { openDB } from 'idb';
 
 // Database name and version
 const DB_NAME = 'todo-list-db';
-const DB_VERSION = 1;
+const DB_VERSION = 2; // Increment version to trigger upgrade
 
 // Initialize the database
 export const initDB = async () => {
   const db = await openDB(DB_NAME, DB_VERSION, {
-    upgrade(db) {
-      // Create a store of objects
-      const store = db.createObjectStore('todos', {
-        // The 'id' property of the object will be the key.
-        keyPath: 'id',
-        // If it isn't explicitly set, create a value by auto incrementing.
-        autoIncrement: true,
-      });
+    upgrade(db, oldVersion, newVersion) {
+      console.log(`Upgrading database from version ${oldVersion} to ${newVersion}`);
       
-      // Create an index on the 'completed' property
-      store.createIndex('completed', 'completed');
-      
-      // Create an index on the 'timestamp' property
-      store.createIndex('timestamp', 'timestamp');
+      // Create the object store if it doesn't exist
+      if (!db.objectStoreNames.contains('todos')) {
+        console.log('Creating todos object store');
+        const store = db.createObjectStore('todos', {
+          keyPath: 'id',
+          autoIncrement: true,
+        });
+        
+        // Create all indexes for new stores
+        store.createIndex('completed', 'completed');
+        store.createIndex('timestamp', 'timestamp');
+        store.createIndex('priority', 'priority');
+      }
+      // For existing stores, the priority index will be added automatically
+      // when we try to access it, so we don't need to handle it here
     },
   });
   
@@ -56,7 +60,31 @@ export const getAllTodos = async () => {
     const store = tx.objectStore('todos');
     const todos = await store.getAll();
     console.log('Retrieved todos from IndexedDB:', todos);
-    return todos;
+    
+    // Migrate existing todos to include priority field if missing
+    const migratedTodos = todos.map(todo => {
+      if (!todo.hasOwnProperty('priority')) {
+        return { ...todo, priority: 'Medium' };
+      }
+      return todo;
+    });
+    
+    // Update todos in database if migration was needed
+    if (migratedTodos.some(todo => !todos.find(original => original.id === todo.id && original.priority === todo.priority))) {
+      console.log('Migrating existing todos to include priority field...');
+      const updateTx = db.transaction('todos', 'readwrite');
+      const updateStore = updateTx.objectStore('todos');
+      
+      for (const todo of migratedTodos) {
+        if (!todos.find(original => original.id === todo.id && original.priority === todo.priority)) {
+          await updateStore.put(todo);
+        }
+      }
+      await updateTx.done;
+      console.log('Migration completed');
+    }
+    
+    return migratedTodos;
   } catch (error) {
     console.error('Error getting todos from IndexedDB:', error);
     return [];
@@ -105,7 +133,7 @@ export const exportTodosAsCSV = async () => {
   const todos = await getAllTodos();
   
   // Define the column headers
-  const headers = ['id', 'title', 'description', 'completed', 'timestamp'];
+  const headers = ['id', 'title', 'description', 'priority', 'completed', 'timestamp'];
   
   // Convert the data to CSV format
   const csvContent = [
@@ -118,6 +146,7 @@ export const exportTodosAsCSV = async () => {
         todo.id,
         `"${todo.title.replace(/"/g, '""')}"`, // Escape quotes in title
         `"${(todo.description || '').replace(/"/g, '""')}"`, // Escape quotes in description
+        todo.priority || 'Medium', // Default to Medium if no priority
         todo.completed ? 'true' : 'false',
         new Date(todo.timestamp).toISOString()
       ].join(',');

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ListGroup, Form, Button } from 'react-bootstrap';
+import { ListGroup, Form, Button, Badge } from 'react-bootstrap';
 import { useTodoContext } from '../contexts/TodoContext';
 
 const TodoItem = ({ todo }) => {
@@ -7,6 +7,7 @@ const TodoItem = ({ todo }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedTitle, setEditedTitle] = useState(todo.title);
   const [editedDescription, setEditedDescription] = useState(todo.description || '');
+  const [editedPriority, setEditedPriority] = useState(todo.priority || 'Medium');
 
   // Handle toggling todo completion
   const handleToggle = () => {
@@ -26,7 +27,8 @@ const TodoItem = ({ todo }) => {
       updateTodo({
         ...todo,
         title: editedTitle.trim(),
-        description: editedDescription.trim()
+        description: editedDescription.trim(),
+        priority: editedPriority
       });
       setIsEditing(false);
     }
@@ -36,6 +38,7 @@ const TodoItem = ({ todo }) => {
   const handleCancel = () => {
     setEditedTitle(todo.title);
     setEditedDescription(todo.description || '');
+    setEditedPriority(todo.priority || 'Medium');
     setIsEditing(false);
   };
 
@@ -45,9 +48,27 @@ const TodoItem = ({ todo }) => {
     return date.toLocaleString();
   };
 
+  // Get priority badge variant
+  const getPriorityVariant = (priority) => {
+    switch (priority) {
+      case 'Highest':
+        return 'danger';
+      case 'High':
+        return 'warning';
+      case 'Medium':
+        return 'primary';
+      case 'Low':
+        return 'info';
+      case 'Very Low':
+        return 'secondary';
+      default:
+        return 'primary';
+    }
+  };
+
   return (
     <ListGroup.Item 
-      className={`todo-item ${todo.completed ? 'bg-light' : ''}`}
+      className={`todo-item text-start ${todo.completed ? 'bg-light' : ''}`}
     >
       {isEditing ? (
         // Edit mode
@@ -69,6 +90,19 @@ const TodoItem = ({ todo }) => {
               value={editedDescription}
               onChange={(e) => setEditedDescription(e.target.value)}
             />
+          </Form.Group>
+          <Form.Group className="mb-3">
+            <Form.Label>Priority</Form.Label>
+            <Form.Select
+              value={editedPriority}
+              onChange={(e) => setEditedPriority(e.target.value)}
+            >
+              <option value="Highest">Highest</option>
+              <option value="High">High</option>
+              <option value="Medium">Medium</option>
+              <option value="Low">Low</option>
+              <option value="Very Low">Very Low</option>
+            </Form.Select>
           </Form.Group>
           <div className="d-flex justify-content-end gap-2">
             <Button 
@@ -106,9 +140,14 @@ const TodoItem = ({ todo }) => {
                 className="me-2"
               />
               <div>
-                <h5 className={todo.completed ? 'text-decoration-line-through text-muted mb-1' : 'mb-1'}>
-                  {todo.title}
-                </h5>
+                <div className="d-flex align-items-center mb-1">
+                  <h5 className={todo.completed ? 'text-decoration-line-through text-muted mb-0 me-2' : 'mb-0 me-2'}>
+                    {todo.title}
+                  </h5>
+                  <Badge bg={getPriorityVariant(todo.priority || 'Medium')} className="fs-6">
+                    {todo.priority || 'Medium'}
+                  </Badge>
+                </div>
                 {todo.description && (
                   <p className="text-muted mb-1">{todo.description}</p>
                 )}

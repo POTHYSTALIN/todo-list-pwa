@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ListGroup, Button, Badge } from 'react-bootstrap';
+import { ListGroup, Button, Badge, Form } from 'react-bootstrap';
 import { useTodoContext } from '../contexts/TodoContext';
 import TodoItem from './TodoItem';
 import TodoForm from './TodoForm';
@@ -18,6 +18,7 @@ const TodoList = () => {
   } = useTodoContext();
   
   const [filter, setFilter] = useState('active'); // 'all', 'active', 'completed'
+  const [sortBy, setSortBy] = useState('timestamp'); // 'timestamp', 'priority', 'title'
   const [showForm, setShowForm] = useState(false);
   const [debugInfo, setDebugInfo] = useState('');
   
@@ -28,8 +29,25 @@ const TodoList = () => {
     return true; // 'all'
   });
   
-  // Sort todos by timestamp (newest first)
-  const sortedTodos = [...filteredTodos].sort((a, b) => b.timestamp - a.timestamp);
+  // Sort todos based on current sort option
+  const sortedTodos = [...filteredTodos].sort((a, b) => {
+    switch (sortBy) {
+      case 'priority':
+        const priorityOrder = { 'Highest': 5, 'High': 4, 'Medium': 3, 'Low': 2, 'Very Low': 1 };
+        const aPriority = priorityOrder[a.priority || 'Medium'];
+        const bPriority = priorityOrder[b.priority || 'Medium'];
+        if (aPriority !== bPriority) {
+          return bPriority - aPriority; // Highest priority first
+        }
+        // If same priority, sort by timestamp (newest first)
+        return b.timestamp - a.timestamp;
+      case 'title':
+        return a.title.localeCompare(b.title);
+      case 'timestamp':
+      default:
+        return b.timestamp - a.timestamp; // Newest first
+    }
+  });
 
   // Function to check IndexedDB directly
   const checkIndexedDB = async () => {
@@ -142,32 +160,47 @@ const TodoList = () => {
         </div>
       )}
       
-      {/* Filter buttons */}
-      <div className="mb-3 d-flex gap-2">
-        <Button 
-          variant={filter === 'active' ? 'primary' : 'outline-primary'} 
-          onClick={() => setFilter('active')}
-          className="btn-icon-text"
-        >
-          <i className="bi bi-circle"></i>
-          <span className="btn-text">Active</span>
-        </Button>
-        <Button 
-          variant={filter === 'completed' ? 'primary' : 'outline-primary'} 
-          onClick={() => setFilter('completed')}
-          className="btn-icon-text"
-        >
-          <i className="bi bi-check-circle"></i>
-          <span className="btn-text">Completed</span>
-        </Button>
-        <Button 
-          variant={filter === 'all' ? 'primary' : 'outline-primary'} 
-          onClick={() => setFilter('all')}
-          className="btn-icon-text"
-        >
-          <i className="bi bi-collection"></i>
-          <span className="btn-text">All</span>
-        </Button>
+      {/* Filter and Sort controls */}
+      <div className="mb-3 d-flex gap-2 align-items-center">
+        <div className="d-flex gap-2">
+          <Button 
+            variant={filter === 'active' ? 'primary' : 'outline-primary'} 
+            onClick={() => setFilter('active')}
+            className="btn-icon-text"
+          >
+            <i className="bi bi-circle"></i>
+            <span className="btn-text">Active</span>
+          </Button>
+          <Button 
+            variant={filter === 'completed' ? 'primary' : 'outline-primary'} 
+            onClick={() => setFilter('completed')}
+            className="btn-icon-text"
+          >
+            <i className="bi bi-check-circle"></i>
+            <span className="btn-text">Completed</span>
+          </Button>
+          <Button 
+            variant={filter === 'all' ? 'primary' : 'outline-primary'} 
+            onClick={() => setFilter('all')}
+            className="btn-icon-text"
+          >
+            <i className="bi bi-collection"></i>
+            <span className="btn-text">All</span>
+          </Button>
+        </div>
+        
+        <div className="ms-auto">
+          <Form.Select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            size="sm"
+            style={{ width: 'auto' }}
+          >
+            <option value="timestamp">Sort by Date</option>
+            <option value="priority">Sort by Priority</option>
+            <option value="title">Sort by Title</option>
+          </Form.Select>
+        </div>
       </div>
       
       {/* Error message */}
