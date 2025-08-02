@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Button, Form, Modal, Badge } from 'react-bootstrap';
-import { getAllCategories, addCategory, updateCategory, deleteCategory } from '../utils/db';
+import { getAllCategories, addCategory, updateCategory, deleteCategory, getAllTodos } from '../utils/db';
 
 const Categories = () => {
   const [categories, setCategories] = useState([]);
@@ -23,13 +23,40 @@ const Categories = () => {
     { value: 'secondary', label: 'Gray', class: 'bg-secondary' }
   ];
 
-  // Load categories from IndexedDB
+  // Calculate category counts from todos
+  const calculateCategoryCounts = (categories, todos) => {
+    const categoryCounts = {};
+    
+    // Initialize counts for all categories
+    categories.forEach(category => {
+      categoryCounts[category.id] = 0;
+    });
+    
+    // Count todos for each category
+    todos.forEach(todo => {
+      if (todo.category && categoryCounts.hasOwnProperty(todo.category)) {
+        categoryCounts[todo.category]++;
+      }
+    });
+    
+    // Update categories with real counts
+    return categories.map(category => ({
+      ...category,
+      count: categoryCounts[category.id] || 0
+    }));
+  };
+
+  // Load categories and calculate counts
   const loadCategories = async () => {
     try {
       setLoading(true);
       setError('');
       const categoriesFromDB = await getAllCategories();
-      setCategories(categoriesFromDB);
+      const todosFromDB = await getAllTodos();
+      
+      // Calculate real counts for each category
+      const categoriesWithCounts = calculateCategoryCounts(categoriesFromDB, todosFromDB);
+      setCategories(categoriesWithCounts);
     } catch (err) {
       console.error('Error loading categories:', err);
       setError('Failed to load categories. Please try again.');
@@ -101,6 +128,11 @@ const Categories = () => {
     setError('');
   };
 
+  // Refresh category counts
+  const refreshCounts = async () => {
+    await loadCategories();
+  };
+
   return (
     <Container>
       <Row className="justify-content-center">
@@ -113,15 +145,26 @@ const Categories = () => {
               </h2>
               <p className="text-muted mb-0">Organize your todos into different categories</p>
             </div>
-            <Button 
-              variant="primary" 
-              onClick={() => setShowForm(true)}
-              className="btn-icon-text"
-              title="Add Category"
-            >
-              <i className="bi bi-plus-lg"></i>
-              <span className="btn-text">Add Category</span>
-            </Button>
+            <div className="d-flex gap-2">
+              <Button 
+                variant="outline-secondary" 
+                onClick={refreshCounts}
+                className="btn-icon-text"
+                title="Refresh Counts"
+              >
+                <i className="bi bi-arrow-clockwise"></i>
+                <span className="btn-text">Refresh</span>
+              </Button>
+              <Button 
+                variant="primary" 
+                onClick={() => setShowForm(true)}
+                className="btn-icon-text"
+                title="Add Category"
+              >
+                <i className="bi bi-plus-lg"></i>
+                <span className="btn-text">Add Category</span>
+              </Button>
+            </div>
           </div>
           
           {/* Error message */}
@@ -221,7 +264,7 @@ const Categories = () => {
                             {category.description}
                           </Card.Text>
                           <span className={`badge bg-${category.color} rounded-pill`}>
-                            {category.count} tasks
+                            {category.count} {category.count === 1 ? 'task' : 'tasks'}
                           </span>
                         </div>
                         <div className="d-flex gap-1">

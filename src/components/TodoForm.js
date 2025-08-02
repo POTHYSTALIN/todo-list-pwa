@@ -1,13 +1,29 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Form, Button, Card } from 'react-bootstrap';
 import { useTodoContext } from '../contexts/TodoContext';
+import { getAllCategories } from '../utils/db';
 
 const TodoForm = ({ onComplete }) => {
   const { addTodo } = useTodoContext();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState('Medium');
+  const [category, setCategory] = useState('');
+  const [categories, setCategories] = useState([]);
   const [validated, setValidated] = useState(false);
+
+  // Load categories when component mounts
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const categoriesFromDB = await getAllCategories();
+        setCategories(categoriesFromDB);
+      } catch (error) {
+        console.error('Error loading categories:', error);
+      }
+    };
+    loadCategories();
+  }, []);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -23,6 +39,7 @@ const TodoForm = ({ onComplete }) => {
       title: title.trim(),
       description: description.trim(),
       priority: priority,
+      category: category || null, // Use null if no category selected
       completed: false,
     };
 
@@ -33,6 +50,7 @@ const TodoForm = ({ onComplete }) => {
       setTitle('');
       setDescription('');
       setPriority('Medium');
+      setCategory('');
       setValidated(false);
       
       // Call onComplete callback if provided
@@ -81,22 +99,45 @@ const TodoForm = ({ onComplete }) => {
             />
           </Form.Group>
 
-          <Form.Group className="mb-3" controlId="todoPriority">
-            <Form.Label>
-              <i className="bi bi-flag me-1"></i>
-              Priority
-            </Form.Label>
-            <Form.Select
-              value={priority}
-              onChange={(e) => setPriority(e.target.value)}
-            >
-              <option value="Highest">Highest</option>
-              <option value="High">High</option>
-              <option value="Medium">Medium</option>
-              <option value="Low">Low</option>
-              <option value="Very Low">Very Low</option>
-            </Form.Select>
-          </Form.Group>
+          <div className="row">
+            <div className="col-md-6">
+              <Form.Group className="mb-3" controlId="todoPriority">
+                <Form.Label>
+                  <i className="bi bi-flag me-1"></i>
+                  Priority
+                </Form.Label>
+                <Form.Select
+                  value={priority}
+                  onChange={(e) => setPriority(e.target.value)}
+                >
+                  <option value="Highest">Highest</option>
+                  <option value="High">High</option>
+                  <option value="Medium">Medium</option>
+                  <option value="Low">Low</option>
+                  <option value="Very Low">Very Low</option>
+                </Form.Select>
+              </Form.Group>
+            </div>
+            <div className="col-md-6">
+              <Form.Group className="mb-3" controlId="todoCategory">
+                <Form.Label>
+                  <i className="bi bi-tag me-1"></i>
+                  Category (optional)
+                </Form.Label>
+                <Form.Select
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                >
+                  <option value="">No Category</option>
+                  {categories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.name}
+                    </option>
+                  ))}
+                </Form.Select>
+              </Form.Group>
+            </div>
+          </div>
 
           <div className="d-flex justify-content-end">
             <Button 

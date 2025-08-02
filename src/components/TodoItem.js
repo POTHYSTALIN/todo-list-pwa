@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ListGroup, Form, Button, Badge } from 'react-bootstrap';
 import { useTodoContext } from '../contexts/TodoContext';
+import { getAllCategories } from '../utils/db';
 
 const TodoItem = ({ todo }) => {
   const { toggleTodo, deleteTodo, updateTodo } = useTodoContext();
@@ -8,6 +9,21 @@ const TodoItem = ({ todo }) => {
   const [editedTitle, setEditedTitle] = useState(todo.title);
   const [editedDescription, setEditedDescription] = useState(todo.description || '');
   const [editedPriority, setEditedPriority] = useState(todo.priority || 'Medium');
+  const [editedCategory, setEditedCategory] = useState(todo.category || '');
+  const [categories, setCategories] = useState([]);
+
+  // Load categories when component mounts
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const categoriesFromDB = await getAllCategories();
+        setCategories(categoriesFromDB);
+      } catch (error) {
+        console.error('Error loading categories:', error);
+      }
+    };
+    loadCategories();
+  }, []);
 
   // Handle toggling todo completion
   const handleToggle = () => {
@@ -28,7 +44,8 @@ const TodoItem = ({ todo }) => {
         ...todo,
         title: editedTitle.trim(),
         description: editedDescription.trim(),
-        priority: editedPriority
+        priority: editedPriority,
+        category: editedCategory || null
       });
       setIsEditing(false);
     }
@@ -39,6 +56,7 @@ const TodoItem = ({ todo }) => {
     setEditedTitle(todo.title);
     setEditedDescription(todo.description || '');
     setEditedPriority(todo.priority || 'Medium');
+    setEditedCategory(todo.category || '');
     setIsEditing(false);
   };
 
@@ -66,6 +84,20 @@ const TodoItem = ({ todo }) => {
     }
   };
 
+  // Get category name by ID
+  const getCategoryName = (categoryId) => {
+    if (!categoryId) return null;
+    const category = categories.find(cat => cat.id === categoryId);
+    return category ? category.name : null;
+  };
+
+  // Get category color by ID
+  const getCategoryColor = (categoryId) => {
+    if (!categoryId) return null;
+    const category = categories.find(cat => cat.id === categoryId);
+    return category ? category.color : null;
+  };
+
   return (
     <ListGroup.Item 
       className={`todo-item text-start ${todo.completed ? 'bg-light' : ''}`}
@@ -91,19 +123,39 @@ const TodoItem = ({ todo }) => {
               onChange={(e) => setEditedDescription(e.target.value)}
             />
           </Form.Group>
-          <Form.Group className="mb-3">
-            <Form.Label>Priority</Form.Label>
-            <Form.Select
-              value={editedPriority}
-              onChange={(e) => setEditedPriority(e.target.value)}
-            >
-              <option value="Highest">Highest</option>
-              <option value="High">High</option>
-              <option value="Medium">Medium</option>
-              <option value="Low">Low</option>
-              <option value="Very Low">Very Low</option>
-            </Form.Select>
-          </Form.Group>
+          <div className="row">
+            <div className="col-md-6">
+              <Form.Group className="mb-3">
+                <Form.Label>Priority</Form.Label>
+                <Form.Select
+                  value={editedPriority}
+                  onChange={(e) => setEditedPriority(e.target.value)}
+                >
+                  <option value="Highest">Highest</option>
+                  <option value="High">High</option>
+                  <option value="Medium">Medium</option>
+                  <option value="Low">Low</option>
+                  <option value="Very Low">Very Low</option>
+                </Form.Select>
+              </Form.Group>
+            </div>
+            <div className="col-md-6">
+              <Form.Group className="mb-3">
+                <Form.Label>Category</Form.Label>
+                <Form.Select
+                  value={editedCategory}
+                  onChange={(e) => setEditedCategory(e.target.value)}
+                >
+                  <option value="">No Category</option>
+                  {categories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.name}
+                    </option>
+                  ))}
+                </Form.Select>
+              </Form.Group>
+            </div>
+          </div>
           <div className="d-flex justify-content-end gap-2">
             <Button 
               variant="secondary" 
@@ -144,9 +196,15 @@ const TodoItem = ({ todo }) => {
                   <h5 className={todo.completed ? 'text-decoration-line-through text-muted mb-0 me-2' : 'mb-0 me-2'}>
                     {todo.title}
                   </h5>
-                  <Badge bg={getPriorityVariant(todo.priority || 'Medium')} className="fs-6">
+                  <Badge bg={getPriorityVariant(todo.priority || 'Medium')} className="fs-6 me-2">
                     {todo.priority || 'Medium'}
                   </Badge>
+                  {todo.category && getCategoryName(todo.category) && (
+                    <Badge bg={getCategoryColor(todo.category)} className="fs-6">
+                      <i className="bi bi-tag me-1"></i>
+                      {getCategoryName(todo.category)}
+                    </Badge>
+                  )}
                 </div>
                 {todo.description && (
                   <p className="text-muted mb-1">{todo.description}</p>
