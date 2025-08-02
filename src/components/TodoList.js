@@ -17,7 +17,7 @@ const TodoList = () => {
     checkConnection
   } = useTodoContext();
   
-  const [filter, setFilter] = useState('all'); // 'all', 'active', 'completed'
+  const [filter, setFilter] = useState('active'); // 'all', 'active', 'completed'
   const [showForm, setShowForm] = useState(false);
   const [debugInfo, setDebugInfo] = useState('');
   
@@ -145,20 +145,20 @@ const TodoList = () => {
       {/* Filter buttons */}
       <div className="mb-3 d-flex gap-2">
         <Button 
-          variant={filter === 'all' ? 'primary' : 'outline-primary'} 
-          onClick={() => setFilter('all')}
-          className="btn-icon-text"
-        >
-          <i className="bi bi-collection"></i>
-          <span className="btn-text">All</span>
-        </Button>
-        <Button 
           variant={filter === 'active' ? 'primary' : 'outline-primary'} 
           onClick={() => setFilter('active')}
           className="btn-icon-text"
         >
           <i className="bi bi-circle"></i>
           <span className="btn-text">Active</span>
+        </Button>
+        <Button 
+          variant={filter === 'all' ? 'primary' : 'outline-primary'} 
+          onClick={() => setFilter('all')}
+          className="btn-icon-text"
+        >
+          <i className="bi bi-collection"></i>
+          <span className="btn-text">All</span>
         </Button>
         <Button 
           variant={filter === 'completed' ? 'primary' : 'outline-primary'} 

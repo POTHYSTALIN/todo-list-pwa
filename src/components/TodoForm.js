@@ -39,7 +39,7 @@ const TodoForm = ({ onComplete }) => {
 
   return (
     <Card className="mb-4">
-      <Card.Body>
+      <Card.Body className="text-start">
         <Card.Title>
           <i className="bi bi-plus-circle me-2"></i>
           Add New Todo
@@ -47,7 +47,7 @@ const TodoForm = ({ onComplete }) => {
         <Form noValidate validated={validated} onSubmit={handleSubmit}>
           <Form.Group className="mb-3" controlId="todoTitle">
             <Form.Label>
-              <i className="bi bi-type me-1"></i>
+              <i className="bi bi-card-heading me-1"></i>
               Title
             </Form.Label>
             <Form.Control
