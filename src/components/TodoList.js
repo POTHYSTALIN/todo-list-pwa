@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ListGroup, Button, Badge, Form } from 'react-bootstrap';
 import { useTodoContext } from '../contexts/TodoContext';
 import TodoItem from './TodoItem';
 import TodoForm from './TodoForm';
-import { getAllTodos } from '../utils/db';
+import { getAllTodos, getAllCategories } from '../utils/db';
 
 const TodoList = () => {
   const { 
@@ -18,15 +18,35 @@ const TodoList = () => {
   } = useTodoContext();
   
   const [filter, setFilter] = useState('active'); // 'all', 'active', 'completed'
+  const [categoryFilter, setCategoryFilter] = useState(''); // category ID or empty for all
   const [sortBy, setSortBy] = useState('priority'); // 'timestamp', 'priority', 'title'
   const [showForm, setShowForm] = useState(false);
   const [debugInfo, setDebugInfo] = useState('');
+  const [categories, setCategories] = useState([]);
   
-  // Filter todos based on current filter
+  // Load categories when component mounts
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const categoriesFromDB = await getAllCategories();
+        setCategories(categoriesFromDB);
+      } catch (error) {
+        console.error('Error loading categories:', error);
+      }
+    };
+    loadCategories();
+  }, []);
+  
+  // Filter todos based on current filter and category
   const filteredTodos = todos.filter(todo => {
-    if (filter === 'active') return !todo.completed;
-    if (filter === 'completed') return todo.completed;
-    return true; // 'all'
+    // First filter by completion status
+    if (filter === 'active' && todo.completed) return false;
+    if (filter === 'completed' && !todo.completed) return false;
+    
+    // Then filter by category
+    if (categoryFilter && todo.category !== categoryFilter) return false;
+    
+    return true;
   });
   
   // Sort todos based on current sort option
@@ -62,6 +82,13 @@ const TodoList = () => {
       setDebugInfo(`Error: ${error.message}`);
       console.error('Error checking IndexedDB:', error);
     }
+  };
+
+  // Get category name by ID
+  const getCategoryName = (categoryId) => {
+    if (!categoryId) return null;
+    const category = categories.find(cat => cat.id === categoryId);
+    return category ? category.name : null;
   };
 
   return (
@@ -161,45 +188,98 @@ const TodoList = () => {
       )}
       
       {/* Filter and Sort controls */}
-      <div className="mb-3 d-flex gap-2 align-items-center">
-        <div className="d-flex gap-2">
-          <Button 
-            variant={filter === 'active' ? 'primary' : 'outline-primary'} 
-            onClick={() => setFilter('active')}
-            className="btn-icon-text"
-          >
-            <i className="bi bi-circle"></i>
-            <span className="btn-text">Active</span>
-          </Button>
-          <Button 
-            variant={filter === 'completed' ? 'primary' : 'outline-primary'} 
-            onClick={() => setFilter('completed')}
-            className="btn-icon-text"
-          >
-            <i className="bi bi-check-circle"></i>
-            <span className="btn-text">Completed</span>
-          </Button>
-          <Button 
-            variant={filter === 'all' ? 'primary' : 'outline-primary'} 
-            onClick={() => setFilter('all')}
-            className="btn-icon-text"
-          >
-            <i className="bi bi-collection"></i>
-            <span className="btn-text">All</span>
-          </Button>
+      <div className="mb-3">
+        <div className="d-flex gap-2 align-items-center mb-2">
+          <div className="d-flex gap-2">
+            <Button 
+              variant={filter === 'active' ? 'primary' : 'outline-primary'} 
+              onClick={() => setFilter('active')}
+              className="btn-icon-text"
+            >
+              <i className="bi bi-circle"></i>
+              <span className="btn-text">Active</span>
+            </Button>
+            <Button 
+              variant={filter === 'completed' ? 'primary' : 'outline-primary'} 
+              onClick={() => setFilter('completed')}
+              className="btn-icon-text"
+            >
+              <i className="bi bi-check-circle"></i>
+              <span className="btn-text">Completed</span>
+            </Button>
+            <Button 
+              variant={filter === 'all' ? 'primary' : 'outline-primary'} 
+              onClick={() => setFilter('all')}
+              className="btn-icon-text"
+            >
+              <i className="bi bi-collection"></i>
+              <span className="btn-text">All</span>
+            </Button>
+          </div>
+          
+          <div className="ms-auto">
+            <Form.Select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              size="sm"
+              style={{ width: 'auto' }}
+            >
+              <option value="timestamp">Sort by Date</option>
+              <option value="priority">Sort by Priority</option>
+              <option value="title">Sort by Title</option>
+            </Form.Select>
+          </div>
         </div>
         
-        <div className="ms-auto">
-          <Form.Select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-            size="sm"
-            style={{ width: 'auto' }}
-          >
-            <option value="timestamp">Sort by Date</option>
-            <option value="priority">Sort by Priority</option>
-            <option value="title">Sort by Title</option>
-          </Form.Select>
+        {/* Category Filter */}
+        <div className="d-flex gap-2 align-items-center">
+          <div className="d-flex align-items-center">
+            <i className="bi bi-tag me-2 text-muted"></i>
+            <span className="text-muted me-2">Category:</span>
+            <Form.Select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              size="sm"
+              style={{ width: 'auto', minWidth: '150px' }}
+            >
+              <option value="">All Categories</option>
+              {categories.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
+            </Form.Select>
+            {categoryFilter && (
+              <Button
+                variant="outline-secondary"
+                size="sm"
+                onClick={() => setCategoryFilter('')}
+                className="ms-2 btn-icon-text"
+                title="Clear Category Filter"
+              >
+                <i className="bi bi-x-lg"></i>
+              </Button>
+            )}
+          </div>
+          
+          {/* Active filters display */}
+          {(filter !== 'all' || categoryFilter) && (
+            <div className="ms-auto">
+              <small className="text-muted">
+                Showing: 
+                {filter !== 'all' && (
+                  <Badge bg="info" className="ms-1">
+                    {filter === 'active' ? 'Active' : 'Completed'}
+                  </Badge>
+                )}
+                {categoryFilter && (
+                  <Badge bg="secondary" className="ms-1">
+                    {getCategoryName(categoryFilter)}
+                  </Badge>
+                )}
+              </small>
+            </div>
+          )}
         </div>
       </div>
       
@@ -231,8 +311,8 @@ const TodoList = () => {
             <i className="bi bi-inbox display-1 text-muted"></i>
             <p className="text-muted mt-3">No todos found.</p>
             <p className="text-muted">
-              {filter !== 'all' 
-                ? `Try switching to a different filter or add a new todo.` 
+              {(filter !== 'all' || categoryFilter) 
+                ? `Try adjusting your filters or add a new todo.` 
                 : `Click the "Add Todo" button to get started.`}
             </p>
           </div>
