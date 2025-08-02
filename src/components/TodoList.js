@@ -153,20 +153,20 @@ const TodoList = () => {
           <span className="btn-text">Active</span>
         </Button>
         <Button 
-          variant={filter === 'all' ? 'primary' : 'outline-primary'} 
-          onClick={() => setFilter('all')}
-          className="btn-icon-text"
-        >
-          <i className="bi bi-collection"></i>
-          <span className="btn-text">All</span>
-        </Button>
-        <Button 
           variant={filter === 'completed' ? 'primary' : 'outline-primary'} 
           onClick={() => setFilter('completed')}
           className="btn-icon-text"
         >
           <i className="bi bi-check-circle"></i>
           <span className="btn-text">Completed</span>
+        </Button>
+        <Button 
+          variant={filter === 'all' ? 'primary' : 'outline-primary'} 
+          onClick={() => setFilter('all')}
+          className="btn-icon-text"
+        >
+          <i className="bi bi-collection"></i>
+          <span className="btn-text">All</span>
         </Button>
       </div>
       
