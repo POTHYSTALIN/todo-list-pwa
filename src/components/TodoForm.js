@@ -119,7 +119,7 @@ const TodoForm = ({ onComplete }) => {
               </Form.Group>
             </div>
             <div className="col-md-6">
-              <Form.Group className="mb-3" controlId="todoCategory">
+              <Form.Group className="mb-3 dummy" controlId="todoCategory">
                 <Form.Label>
                   <i className="bi bi-tag me-1"></i>
                   Category (optional)
