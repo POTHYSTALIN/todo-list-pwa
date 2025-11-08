@@ -3,6 +3,7 @@ import { Container, Row, Col, Button } from 'react-bootstrap';
 import { TodoProvider } from './contexts/TodoContext';
 import TodoList from './components/TodoList';
 import Categories from './components/Categories';
+import Integrations from './components/Integrations';
 import SideDrawer from './components/SideDrawer';
 import NetworkStatus from './components/NetworkStatus';
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -21,6 +22,8 @@ function App() {
     switch (currentPage) {
       case 'categories':
         return <Categories />;
+      case 'integrations':
+        return <Integrations />;
       case 'todos':
       default:
         return <TodoList />;
@@ -31,6 +34,8 @@ function App() {
     switch (currentPage) {
       case 'categories':
         return 'Categories';
+      case 'integrations':
+        return 'Integrations';
       case 'todos':
       default:
         return 'Todos';
@@ -41,6 +46,8 @@ function App() {
     switch (currentPage) {
       case 'categories':
         return 'bi-collection';
+      case 'integrations':
+        return 'bi-plug';
       case 'todos':
       default:
         return 'bi-check2-square';

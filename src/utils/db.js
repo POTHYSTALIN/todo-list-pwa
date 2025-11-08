@@ -2,7 +2,7 @@ import { openDB } from 'idb';
 
 // Database name and version
 const DB_NAME = 'todo-list-db';
-const DB_VERSION = 4; // Increment version to trigger upgrade
+const DB_VERSION = 5; // Increment version to trigger upgrade
 
 // Default categories
 const DEFAULT_CATEGORIES = [
@@ -68,6 +68,14 @@ export const initDB = async () => {
         // Create indexes for categories store
         categoriesStore.createIndex('name', 'name');
         categoriesStore.createIndex('color', 'color');
+      }
+
+      // Create the integrations object store if it doesn't exist
+      if (!db.objectStoreNames.contains('integrations')) {
+        console.log('Creating integrations object store');
+        db.createObjectStore('integrations', {
+          keyPath: 'key',
+        });
       }
     },
   });
@@ -274,6 +282,61 @@ export const deleteCategory = async (id) => {
   const store = tx.objectStore('categories');
   await store.delete(id);
   await tx.done;
+};
+
+// Integrations functions
+export const getAllIntegrations = async () => {
+  try {
+    const db = await initDB();
+    const tx = db.transaction('integrations', 'readonly');
+    const store = tx.objectStore('integrations');
+    const integrations = await store.getAll();
+    return integrations;
+  } catch (error) {
+    console.error('Error getting integrations from IndexedDB:', error);
+    return [];
+  }
+};
+
+export const getIntegration = async (key) => {
+  try {
+    const db = await initDB();
+    const tx = db.transaction('integrations', 'readonly');
+    const store = tx.objectStore('integrations');
+    const integration = await store.get(key);
+    return integration ? integration.value : null;
+  } catch (error) {
+    console.error('Error getting integration from IndexedDB:', error);
+    return null;
+  }
+};
+
+export const saveIntegration = async (key, value) => {
+  try {
+    const db = await initDB();
+    const tx = db.transaction('integrations', 'readwrite');
+    const store = tx.objectStore('integrations');
+    await store.put({ key, value, timestamp: new Date().getTime() });
+    await tx.done;
+    console.log('Integration saved:', key, value);
+  } catch (error) {
+    console.error('Error saving integration to IndexedDB:', error);
+    throw error;
+  }
+};
+
+export const deleteIntegration = async (key) => {
+  try {
+    const db = await initDB();
+    const tx = db.transaction('integrations', 'readwrite');
+    const store = tx.objectStore('integrations');
+    await store.delete(key);
+    await tx.done;
+    console.log('Integration deleted:', key);
+  } catch (error) {
+    console.error('Error deleting integration from IndexedDB:', error);
+    throw error;
+  }
 };
 
 // Export todos as CSV

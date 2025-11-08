@@ -4,7 +4,8 @@ import { Offcanvas, Nav } from 'react-bootstrap';
 const SideDrawer = ({ show, onHide, onNavigate, currentPage }) => {
   const menuItems = [
     { id: 'todos', label: 'Todos', icon: 'bi-check2-square' },
-    { id: 'categories', label: 'Categories', icon: 'bi-collection' }
+    { id: 'categories', label: 'Categories', icon: 'bi-collection' },
+    { id: 'integrations', label: 'Integrations', icon: 'bi-plug' }
   ];
 
   return (
