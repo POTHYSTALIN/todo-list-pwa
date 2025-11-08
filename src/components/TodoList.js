@@ -3,6 +3,7 @@ import { ListGroup, Button, Badge, Form } from 'react-bootstrap';
 import { useTodoContext } from '../contexts/TodoContext';
 import TodoItem from './TodoItem';
 import TodoForm from './TodoForm';
+import PageHeader from './PageHeader';
 import { getAllTodos, getAllCategories } from '../utils/db';
 
 const TodoList = () => {
@@ -23,6 +24,65 @@ const TodoList = () => {
   const [showForm, setShowForm] = useState(false);
   const [debugInfo, setDebugInfo] = useState('');
   const [categories, setCategories] = useState([]);
+  
+  // Function to check IndexedDB directly
+  const checkIndexedDB = async () => {
+    try {
+      const todosFromDB = await getAllTodos();
+      setDebugInfo(`Found ${todosFromDB.length} todos in IndexedDB: ${JSON.stringify(todosFromDB)}`);
+      console.log('Todos from IndexedDB:', todosFromDB);
+      
+      // Refresh todos from IndexedDB
+      refreshTodos();
+    } catch (error) {
+      setDebugInfo(`Error: ${error.message}`);
+      console.error('Error checking IndexedDB:', error);
+    }
+  };
+  
+  const statusBadges = (
+    <>
+      {networkStatus ? (
+        <Badge bg="success">
+          <i className="bi bi-wifi me-1"></i> <span className="badge-text">Online</span>
+        </Badge>
+      ) : (
+        <Badge bg="warning text-dark">
+          <i className="bi bi-wifi-off me-1"></i> <span className="badge-text">Offline</span>
+        </Badge>
+      )}
+      {syncPending && (
+        <Badge bg="info" className="ms-2">
+          <i className="bi bi-arrow-repeat me-1"></i> <span className="badge-text">Sync Pending</span>
+        </Badge>
+      )}
+    </>
+  );
+
+  const headerActions = [
+    {
+      variant: 'primary',
+      onClick: () => setShowForm(!showForm),
+      title: showForm ? 'Cancel' : 'Add Todo',
+      icon: showForm ? 'bi-x-lg' : 'bi-plus-lg',
+      label: showForm ? 'Cancel' : 'Add Todo'
+    },
+    {
+      variant: 'outline-secondary',
+      onClick: exportToCsv,
+      disabled: todos.length === 0,
+      title: 'Export as CSV',
+      icon: 'bi-download',
+      label: 'Export CSV'
+    },
+    ...(process.env.NODE_ENV === 'development' ? [{
+      variant: 'outline-info',
+      onClick: checkIndexedDB,
+      title: 'Debug IndexedDB',
+      icon: 'bi-bug',
+      label: 'Debug'
+    }] : [])
+  ];
   
   // Load categories when component mounts
   useEffect(() => {
@@ -69,21 +129,6 @@ const TodoList = () => {
     }
   });
 
-  // Function to check IndexedDB directly
-  const checkIndexedDB = async () => {
-    try {
-      const todosFromDB = await getAllTodos();
-      setDebugInfo(`Found ${todosFromDB.length} todos in IndexedDB: ${JSON.stringify(todosFromDB)}`);
-      console.log('Todos from IndexedDB:', todosFromDB);
-      
-      // Refresh todos from IndexedDB
-      refreshTodos();
-    } catch (error) {
-      setDebugInfo(`Error: ${error.message}`);
-      console.error('Error checking IndexedDB:', error);
-    }
-  };
-
   // Get category name by ID
   const getCategoryName = (categoryId) => {
     if (!categoryId) return null;
@@ -93,79 +138,12 @@ const TodoList = () => {
 
   return (
     <div className="todo-list">
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <div>
-          <h2>
-            My Todos &nbsp;
-            <span className="network-status h6">
-              {networkStatus ? (
-                <Badge bg="success">
-                  <i className="bi bi-wifi me-1"></i> <span className="badge-text">Online</span>
-                </Badge>
-              ) : (
-                <Badge bg="warning text-dark">
-                  <i className="bi bi-wifi-off me-1"></i> <span className="badge-text">Offline</span>
-                </Badge>
-              )}
-              {syncPending && (
-                <Badge bg="info" className="ms-2">
-                  <i className="bi bi-arrow-repeat me-1"></i> <span className="badge-text">Sync Pending</span>
-                </Badge>
-              )}
-            </span>
-            {/* <Button 
-              variant="link" 
-              className="p-0 ms-2 text-muted" 
-              onClick={checkConnection}
-              title="Check connection"
-              style={{ fontSize: '0.8rem' }}
-            >
-              <i className="bi bi-arrow-clockwise"></i>
-            </Button> */}
-          </h2>
-        </div>
-        <div>
-          <Button 
-            variant="primary" 
-            onClick={() => setShowForm(!showForm)}
-            className="me-2 btn-icon-text"
-            title={showForm ? "Cancel" : "Add Todo"}
-          >
-            {showForm ? (
-              <>
-                <i className="bi bi-x-lg"></i>
-                <span className="btn-text">Cancel</span>
-              </>
-            ) : (
-              <>
-                <i className="bi bi-plus-lg"></i>
-                <span className="btn-text">Add Todo</span>
-              </>
-            )}
-          </Button>
-          <Button 
-            variant="outline-secondary" 
-            onClick={exportToCsv}
-            disabled={todos.length === 0}
-            className="btn-icon-text"
-            title="Export as CSV"
-          >
-            <i className="bi bi-download"></i>
-            <span className="btn-text">Export CSV</span>
-          </Button>
-          {process.env.NODE_ENV === 'development' && (
-            <Button 
-              variant="outline-info" 
-              onClick={checkIndexedDB}
-              className="ms-2 btn-icon-text"
-              title="Debug IndexedDB"
-            >
-              <i className="bi bi-bug"></i>
-              <span className="btn-text">Debug</span>
-            </Button>
-          )}
-        </div>
-      </div>
+      <PageHeader 
+        page="todos"
+        statusBadges={statusBadges}
+        actions={headerActions}
+      />
+      
       
       {/* Debug Information */}
       {debugInfo && (

@@ -1,6 +1,6 @@
-# Todo List PWA - Client
+# One Nest
 
-This is the React frontend for the Todo List PWA. It's built with Create React App and configured as a Progressive Web App.
+Keep everything in One Nest - A Progressive Web App for managing your personal data including todos, categories, integrations, and more.
 
 ## Project Structure
 
@@ -43,17 +43,18 @@ Your app is ready to be deployed!
 
 ## IndexedDB Usage
 
-The app uses IndexedDB to store todos locally:
+The app uses IndexedDB to store data locally:
 
 - **Database Name**: todo-list-db
-- **Version**: 1
-- **Object Store**: todos
-- **Indexes**: completed, timestamp
+- **Version**: 5
+- **Object Stores**: todos, categories, integrations
+- **Indexes**: completed, timestamp, priority, category
 
 This allows for:
 - Persistent storage across browser sessions
 - Offline data access
 - Fast queries and updates
+- Import/Export functionality
 
 ## Service Worker
 

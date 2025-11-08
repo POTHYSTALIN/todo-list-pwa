@@ -36,54 +36,6 @@ function App() {
     }
   };
 
-  const getPageTitle = () => {
-    switch (currentPage) {
-      case 'categories':
-        return 'Categories';
-      case 'integrations':
-        return 'Integrations';
-      case 'import':
-        return 'Import';
-      case 'export':
-        return 'Export';
-      case 'todos':
-      default:
-        return 'Todos';
-    }
-  };
-
-  const getPageIcon = () => {
-    switch (currentPage) {
-      case 'categories':
-        return 'bi-collection';
-      case 'integrations':
-        return 'bi-plug';
-      case 'import':
-        return 'bi-upload';
-      case 'export':
-        return 'bi-download';
-      case 'todos':
-      default:
-        return 'bi-check2-square';
-    }
-  };
-
-  const getPageSubtitle = () => {
-    switch (currentPage) {
-      case 'categories':
-        return 'Manage the categories that can be applied to different entities';
-      case 'integrations':
-        return 'Connect external services';
-      case 'import':
-        return 'Import data from JSON';
-      case 'export':
-        return 'Export all your data as JSON';
-      case 'todos':
-      default:
-        return 'Manage your tasks, even when offline!';
-    }
-  };
-
   return (
     <TodoProvider>
       <div className="App">
@@ -92,10 +44,10 @@ function App() {
             <div className="d-flex align-items-center justify-content-between">
               <div>
                 <h1 className="mb-0">
-                  <i className={`${getPageIcon()} me-2`}></i>
-                  {getPageTitle()}
+                  <i className="bi bi-box-seam me-2"></i>
+                  One Nest
                 </h1>
-                <p className="mb-0">{getPageSubtitle()}</p>
+                <p className="mb-0">Keep everything in One Nest</p>
               </div>
               <Button
                 variant="outline-light"

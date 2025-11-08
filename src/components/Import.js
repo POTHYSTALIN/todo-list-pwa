@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Card, Button, Alert, Form } from 'react-bootstrap';
+import PageHeader from './PageHeader';
 import { initDB } from '../utils/db';
 
 const Import = () => {
@@ -136,6 +137,10 @@ const Import = () => {
 
   return (
     <div className="import-page">
+      <PageHeader 
+        page="import"
+      />
+      
       {showSuccess && (
         <Alert variant="success" dismissible onClose={() => setShowSuccess(false)}>
           <i className="bi bi-check-circle me-2"></i>

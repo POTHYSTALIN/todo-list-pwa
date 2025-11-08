@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, Form, Button, Modal, Table } from 'react-bootstrap';
+import PageHeader from './PageHeader';
 import { saveIntegration, getIntegration, deleteIntegration } from '../utils/db';
 
 const Integrations = () => {
@@ -67,6 +68,10 @@ const Integrations = () => {
 
   return (
     <div className="integrations-page">
+      <PageHeader 
+        page="integrations"
+      />
+      
       <Card className="mb-3">
         <Card.Body>
           <div className="d-flex align-items-center justify-content-between">

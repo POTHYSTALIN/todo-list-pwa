@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { Card, Button, Alert } from 'react-bootstrap';
+import PageHeader from './PageHeader';
 import { getAllTodos, getAllCategories, getAllIntegrations } from '../utils/db';
 
 const Export = () => {
   const [showSuccess, setShowSuccess] = useState(false);
-
+  
   const handleExportData = async () => {
     try {
       // Fetch all data from IndexedDB
@@ -50,8 +51,23 @@ const Export = () => {
     }
   };
 
+  const headerActions = [
+    {
+      variant: 'primary',
+      onClick: handleExportData,
+      title: 'Export Data',
+      icon: 'bi-download',
+      label: 'Export Data'
+    }
+  ];
+
   return (
     <div className="export-page">
+      <PageHeader 
+        page="export"
+        actions={headerActions}
+      />
+      
       {showSuccess && (
         <Alert variant="success" dismissible onClose={() => setShowSuccess(false)}>
           <i className="bi bi-check-circle me-2"></i>
@@ -60,24 +76,11 @@ const Export = () => {
       )}
 
       <Card className="mb-4">
-        <Card.Header className="bg-white">
-          <h5 className="mb-0">
-            <i className="bi bi-download me-2"></i>
-            Export All Data
-          </h5>
-        </Card.Header>
         <Card.Body>
-          <p className="text-muted mb-3">
+          <p className="text-muted mb-0">
             Export all your todos, categories, and integrations as a JSON file. 
             You can use this file as a backup or to transfer your data.
           </p>
-          <Button 
-            variant="primary" 
-            onClick={handleExportData}
-          >
-            <i className="bi bi-download me-2"></i>
-            Export Data as JSON
-          </Button>
         </Card.Body>
       </Card>
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Button, Form, Modal, Badge } from 'react-bootstrap';
+import PageHeader from './PageHeader';
 import { getAllCategories, addCategory, updateCategory, deleteCategory, getAllTodos } from '../utils/db';
 
 const Categories = () => {
@@ -13,6 +14,28 @@ const Categories = () => {
     description: '',
     color: 'primary'
   });
+  
+  // Refresh category counts
+  const refreshCounts = async () => {
+    await loadCategories();
+  };
+  
+  const headerActions = [
+    {
+      variant: 'outline-secondary',
+      onClick: refreshCounts,
+      title: 'Refresh Counts',
+      icon: 'bi-arrow-clockwise',
+      label: 'Refresh'
+    },
+    {
+      variant: 'primary',
+      onClick: () => setShowForm(!showForm),
+      title: showForm ? 'Cancel' : 'Add Category',
+      icon: showForm ? 'bi-x-lg' : 'bi-plus-lg',
+      label: showForm ? 'Cancel' : 'Add Category'
+    }
+  ];
 
   const colorOptions = [
     { value: 'primary', label: 'Blue', class: 'bg-primary' },
@@ -128,42 +151,12 @@ const Categories = () => {
     setError('');
   };
 
-  // Refresh category counts
-  const refreshCounts = async () => {
-    await loadCategories();
-  };
-
   return (
     <div>
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <div>
-          <h2>
-            <i className="bi bi-collection me-2"></i>
-            Categories
-          </h2>
-          <p className="text-muted mb-0">Organize your todos into different categories</p>
-        </div>
-        <div className="d-flex gap-2">
-          <Button 
-            variant="outline-secondary" 
-            onClick={refreshCounts}
-            className="btn-icon-text"
-            title="Refresh Counts"
-          >
-            <i className="bi bi-arrow-clockwise"></i>
-            <span className="btn-text">Refresh</span>
-          </Button>
-          <Button 
-            variant="primary" 
-            onClick={() => setShowForm(true)}
-            className="btn-icon-text"
-            title="Add Category"
-          >
-            <i className="bi bi-plus-lg"></i>
-            <span className="btn-text">Add Category</span>
-          </Button>
-        </div>
-      </div>
+      <PageHeader 
+        page="categories"
+        actions={headerActions}
+      />
       
       {/* Error message */}
       {error && (
