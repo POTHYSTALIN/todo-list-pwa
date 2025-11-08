@@ -4,6 +4,8 @@ import { TodoProvider } from './contexts/TodoContext';
 import TodoList from './components/TodoList';
 import Categories from './components/Categories';
 import Integrations from './components/Integrations';
+import Import from './components/Import';
+import Export from './components/Export';
 import SideDrawer from './components/SideDrawer';
 import NetworkStatus from './components/NetworkStatus';
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -24,6 +26,10 @@ function App() {
         return <Categories />;
       case 'integrations':
         return <Integrations />;
+      case 'import':
+        return <Import />;
+      case 'export':
+        return <Export />;
       case 'todos':
       default:
         return <TodoList />;
@@ -36,6 +42,10 @@ function App() {
         return 'Categories';
       case 'integrations':
         return 'Integrations';
+      case 'import':
+        return 'Import';
+      case 'export':
+        return 'Export';
       case 'todos':
       default:
         return 'Todos';
@@ -48,9 +58,29 @@ function App() {
         return 'bi-collection';
       case 'integrations':
         return 'bi-plug';
+      case 'import':
+        return 'bi-upload';
+      case 'export':
+        return 'bi-download';
       case 'todos':
       default:
         return 'bi-check2-square';
+    }
+  };
+
+  const getPageSubtitle = () => {
+    switch (currentPage) {
+      case 'categories':
+        return 'Manage the categories that can be applied to different entities';
+      case 'integrations':
+        return 'Connect external services';
+      case 'import':
+        return 'Import data from JSON';
+      case 'export':
+        return 'Export all your data as JSON';
+      case 'todos':
+      default:
+        return 'Manage your tasks, even when offline!';
     }
   };
 
@@ -65,7 +95,7 @@ function App() {
                   <i className={`${getPageIcon()} me-2`}></i>
                   {getPageTitle()}
                 </h1>
-                <p className="mb-0">Manage your tasks, even when offline!</p>
+                <p className="mb-0">{getPageSubtitle()}</p>
               </div>
               <Button
                 variant="outline-light"
