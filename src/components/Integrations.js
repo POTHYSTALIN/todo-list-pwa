@@ -74,25 +74,26 @@ const Integrations = () => {
       
       <Card className="mb-3">
         <Card.Body>
-          <div className="d-flex align-items-center justify-content-between">
-            <div className="d-flex align-items-center">
-              <i className="bi bi-google fs-4 me-3 text-primary"></i>
-              <div className="d-flex align-items-center gap-2">
-                <h6 className="mb-0">Google</h6>
-                {isConnected ? (
-                  <small className="text-success">
-                    <i className="bi bi-check-circle-fill me-1"></i>
-                    Connected
-                  </small>
-                ) : (
-                  <small className="text-danger">
-                    <i className="bi bi-x-circle me-1"></i>
-                    Not connected
-                  </small>
-                )}
-              </div>
+          <div className="d-flex flex-wrap align-items-center justify-content-between gap-2">
+            {/* Left: Icon, Name and Status */}
+            <div className="d-flex align-items-center flex-grow-1 flex-md-grow-0 gap-2">
+              <i className="bi bi-google fs-4 text-primary"></i>
+              <h6 className="mb-0">Google</h6>
+              {isConnected ? (
+                <small className="text-success">
+                  <i className="bi bi-check-circle-fill me-1"></i>
+                  Connected
+                </small>
+              ) : (
+                <small className="text-danger">
+                  <i className="bi bi-x-circle me-1"></i>
+                  Not connected
+                </small>
+              )}
             </div>
-            <div className="d-flex align-items-center gap-2">
+            
+            {/* Right: Actions */}
+            <div className="d-flex align-items-center gap-2 integration-actions">
               {!isConnected ? (
                 <>
                   <input
@@ -103,18 +104,20 @@ const Integrations = () => {
                     style={{ display: 'none' }}
                     id="google-credentials-file"
                   />
-                  {selectedFile && (
-                    <small className="text-muted">{selectedFile.name}</small>
-                  )}
-                  <label htmlFor="google-credentials-file" className="btn btn-outline-secondary btn-sm mb-0">
+                  <label 
+                    htmlFor="google-credentials-file" 
+                    className="btn btn-outline-secondary btn-sm mb-0 flex-grow-1 flex-md-grow-0"
+                    style={{ minWidth: '200px' }}
+                  >
                     <i className="bi bi-file-earmark me-1"></i>
-                    Choose File
+                    {selectedFile ? selectedFile.name : 'Choose File'}
                   </label>
                   <Button 
                     variant="primary" 
                     size="sm"
                     onClick={handleSubmit}
                     disabled={!selectedFile}
+                    className="flex-shrink-0"
                   >
                     <i className="bi bi-plug me-1"></i>
                     Connect

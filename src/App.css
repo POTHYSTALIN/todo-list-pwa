@@ -325,3 +325,14 @@
   font-size: 1.2rem;
   font-weight: 600;
 }
+
+/* Integration card actions responsive layout */
+.integration-actions {
+  flex-basis: 100%;
+}
+
+@media (min-width: 768px) {
+  .integration-actions {
+    flex-basis: auto;
+  }
+}
