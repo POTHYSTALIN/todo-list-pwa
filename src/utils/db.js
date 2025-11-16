@@ -213,18 +213,21 @@ export const clearTodos = async () => {
 // Import todos (replace all with new data)
 export const syncTodosOnDB = async (todos) => {
   const db = await initDB();
-  const tx = db.transaction('todos', 'readwrite');
-  const store = tx.objectStore('todos');
   
-  // Clear existing todos
-  await store.clear();
+  // First transaction: clear existing todos
+  const clearTx = db.transaction('todos', 'readwrite');
+  await clearTx.objectStore('todos').clear();
+  await clearTx.done;
   
-  // Add all new todos
+  // Second transaction: add new todos with auto-generated IDs
+  const addTx = db.transaction('todos', 'readwrite');
+  const store = addTx.objectStore('todos');
   for (const todo of todos) {
-    await store.add(todo);
+    // Remove id to let IndexedDB auto-generate sequential IDs
+    const { id, ...todoWithoutId } = todo;
+    await store.add(todoWithoutId);
   }
-  
-  await tx.done;
+  await addTx.done;
 };
 
 // Get todos by completion status
@@ -335,18 +338,21 @@ export const clearCategories = async () => {
 // Import categories (replace all with new data)
 export const syncCategoriesOnDB = async (categories) => {
   const db = await initDB();
-  const tx = db.transaction('categories', 'readwrite');
-  const store = tx.objectStore('categories');
   
-  // Clear existing categories
-  await store.clear();
+  // First transaction: clear existing categories
+  const clearTx = db.transaction('categories', 'readwrite');
+  await clearTx.objectStore('categories').clear();
+  await clearTx.done;
   
-  // Add all new categories
+  // Second transaction: add new categories with auto-generated IDs
+  const addTx = db.transaction('categories', 'readwrite');
+  const store = addTx.objectStore('categories');
   for (const category of categories) {
-    await store.add(category);
+    // Remove id to let IndexedDB auto-generate sequential IDs
+    const { id, ...categoryWithoutId } = category;
+    await store.add(categoryWithoutId);
   }
-  
-  await tx.done;
+  await addTx.done;
 };
 
 // Integrations functions

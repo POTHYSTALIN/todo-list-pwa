@@ -99,7 +99,7 @@ const Integrations = () => {
       // Save disconnected status to settings
       await saveSetting('apiConnected', false);
       
-      setErrorMessage("Server error, check the API");
+      setErrorMessage(`Server error, check the API (${JSON.stringify(error)})`);
       setShowError(true);
       console.error('Connection error:', error);
     } finally {

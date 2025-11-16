@@ -47,6 +47,7 @@ const TodoList = () => {
 
   // Sync todos with Google Drive via backend API
   const handleSync = async () => {
+    let mergedTodos = null;
     try {
       setSyncing(true);
       setShowSyncAlert(false);
@@ -55,7 +56,7 @@ const TodoList = () => {
       const currentTodos = await getAllTodos();
       
       // Sync with backend API
-      const mergedTodos = await syncTodos(currentTodos);
+      mergedTodos = await syncTodos(currentTodos);
       
       // Import merged todos to IndexedDB
       await syncTodosOnDB(mergedTodos);
@@ -68,7 +69,13 @@ const TodoList = () => {
       setTimeout(() => setShowSyncAlert(false), 3000);
     } catch (error) {
       console.error('Sync error:', error);
-      setSyncMessage(`Sync failed: ${error.message}`);
+      // Show full error details in alert
+      //   const errorDetails = error.stack || error.toString();
+      let errorDetails = '{}';
+      if (mergedTodos && false) {
+        errorDetails = JSON.stringify(mergedTodos);
+      }
+      setSyncMessage(`Sync failed: ${error.message}\n\nDetails:\n${errorDetails}`);
       setShowSyncAlert(true);
     } finally {
       setSyncing(false);

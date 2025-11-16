@@ -27,6 +27,7 @@ const Categories = () => {
 
   // Sync categories with Google Drive via backend API
   const handleSync = async () => {
+    let mergedCategories = null;
     try {
       setSyncing(true);
       setShowSyncAlert(false);
@@ -35,10 +36,10 @@ const Categories = () => {
       const currentCategories = await getAllCategories();
 
       // Sync with backend API
-      const mergedCategories = await syncCategories(currentCategories);
+      mergedCategories = await syncCategories(currentCategories);
 
       // Import merged categories to IndexedDB
-      await syncCategories(mergedCategories);
+      await syncCategoriesOnDB(mergedCategories);
 
       // Refresh UI with synced data
       await loadCategories();
@@ -48,7 +49,12 @@ const Categories = () => {
       setTimeout(() => setShowSyncAlert(false), 3000);
     } catch (error) {
       console.error('Sync error:', error);
-      setSyncMessage(`Sync failed: ${error.message}`);
+      // Show full error details in alert
+      let errorDetails = '{}';
+      if (mergedCategories && false) {
+        errorDetails = JSON.stringify(mergedCategories);
+      }
+      setSyncMessage(`Sync failed: ${error.message}\n\nDetails:\n${errorDetails}`);
       setShowSyncAlert(true);
     } finally {
       setSyncing(false);
