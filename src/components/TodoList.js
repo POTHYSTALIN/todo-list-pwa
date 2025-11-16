@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { ListGroup, Button, Badge, Form } from 'react-bootstrap';
+import { ListGroup, Button, Badge, Form, Alert } from 'react-bootstrap';
 import { useTodoContext } from '../contexts/TodoContext';
 import TodoItem from './TodoItem';
 import TodoForm from './TodoForm';
 import PageHeader from './PageHeader';
-import { getAllTodos, getAllCategories } from '../utils/db';
+import { getAllTodos, getAllCategories, getSetting, syncTodosOnDB } from '../utils/db';
+import { syncTodos } from '../utils/api';
 
 const TodoList = () => {
   const { 
@@ -24,6 +25,10 @@ const TodoList = () => {
   const [showForm, setShowForm] = useState(false);
   const [debugInfo, setDebugInfo] = useState('');
   const [categories, setCategories] = useState([]);
+  const [syncing, setSyncing] = useState(false);
+  const [syncMessage, setSyncMessage] = useState('');
+  const [showSyncAlert, setShowSyncAlert] = useState(false);
+  const [isApiConnected, setIsApiConnected] = useState(false);
   
   // Function to check IndexedDB directly
   const checkIndexedDB = async () => {
@@ -37,6 +42,36 @@ const TodoList = () => {
     } catch (error) {
       setDebugInfo(`Error: ${error.message}`);
       console.error('Error checking IndexedDB:', error);
+    }
+  };
+
+  // Sync todos with Google Drive via backend API
+  const handleSync = async () => {
+    try {
+      setSyncing(true);
+      setShowSyncAlert(false);
+
+      // Get current todos
+      const currentTodos = await getAllTodos();
+      
+      // Sync with backend API
+      const mergedTodos = await syncTodos(currentTodos);
+      
+      // Import merged todos to IndexedDB
+      await syncTodosOnDB(mergedTodos);
+      
+      // Refresh UI with synced data
+      refreshTodos();
+      
+      setSyncMessage('Todos synced successfully!');
+      setShowSyncAlert(true);
+      setTimeout(() => setShowSyncAlert(false), 3000);
+    } catch (error) {
+      console.error('Sync error:', error);
+      setSyncMessage(`Sync failed: ${error.message}`);
+      setShowSyncAlert(true);
+    } finally {
+      setSyncing(false);
     }
   };
   
@@ -68,6 +103,14 @@ const TodoList = () => {
       label: showForm ? 'Cancel' : 'Add Todo'
     },
     {
+      variant: 'success',
+      onClick: handleSync,
+      disabled: syncing || !isApiConnected,
+      title: isApiConnected ? 'Sync with Google Drive' : 'API not connected. Go to Integrations to connect.',
+      icon: syncing ? 'bi-arrow-repeat' : 'bi-cloud-arrow-up',
+      label: syncing ? 'Syncing...' : 'Sync'
+    },
+    {
       variant: 'outline-secondary',
       onClick: exportToCsv,
       disabled: todos.length === 0,
@@ -84,7 +127,7 @@ const TodoList = () => {
     }] : [])
   ];
   
-  // Load categories when component mounts
+  // Load categories and API connection status when component mounts
   useEffect(() => {
     const loadCategories = async () => {
       try {
@@ -94,7 +137,14 @@ const TodoList = () => {
         console.error('Error loading categories:', error);
       }
     };
+    
+    const loadApiConnectionStatus = async () => {
+      const apiConnected = await getSetting('apiConnected');
+      setIsApiConnected(apiConnected === true);
+    };
+    
     loadCategories();
+    loadApiConnectionStatus();
   }, []);
   
   // Filter todos based on current filter and category
@@ -144,6 +194,17 @@ const TodoList = () => {
         actions={headerActions}
       />
       
+      {/* Sync Alert */}
+      {showSyncAlert && (
+        <Alert 
+          variant={syncMessage.includes('failed') || syncMessage.includes('configure') ? 'danger' : 'success'} 
+          dismissible 
+          onClose={() => setShowSyncAlert(false)}
+          className="mb-3"
+        >
+          {syncMessage}
+        </Alert>
+      )}
       
       {/* Debug Information */}
       {debugInfo && (

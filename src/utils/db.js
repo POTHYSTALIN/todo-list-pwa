@@ -2,7 +2,7 @@ import { openDB } from 'idb';
 
 // Database name and version
 const DB_NAME = 'todo-list-db';
-const DB_VERSION = 5; // Increment version to trigger upgrade
+const DB_VERSION = 6; // Increment version to trigger upgrade
 
 // Default categories
 const DEFAULT_CATEGORIES = [
@@ -77,10 +77,23 @@ export const initDB = async () => {
           keyPath: 'key',
         });
       }
+
+      // Create the settings object store if it doesn't exist
+      if (!db.objectStoreNames.contains('settings')) {
+        console.log('Creating settings object store');
+        db.createObjectStore('settings', {
+          keyPath: 'key',
+        });
+      }
     },
   });
   
   return db;
+};
+
+// Get database instance (helper for direct DB access)
+export const getDB = async () => {
+  return await initDB();
 };
 
 // Add a todo
@@ -188,6 +201,32 @@ export const deleteTodo = async (id) => {
   await tx.done;
 };
 
+// Clear all todos
+export const clearTodos = async () => {
+  const db = await initDB();
+  const tx = db.transaction('todos', 'readwrite');
+  const store = tx.objectStore('todos');
+  await store.clear();
+  await tx.done;
+};
+
+// Import todos (replace all with new data)
+export const syncTodosOnDB = async (todos) => {
+  const db = await initDB();
+  const tx = db.transaction('todos', 'readwrite');
+  const store = tx.objectStore('todos');
+  
+  // Clear existing todos
+  await store.clear();
+  
+  // Add all new todos
+  for (const todo of todos) {
+    await store.add(todo);
+  }
+  
+  await tx.done;
+};
+
 // Get todos by completion status
 export const getTodosByStatus = async (completed) => {
   const db = await initDB();
@@ -281,6 +320,32 @@ export const deleteCategory = async (id) => {
   const tx = db.transaction('categories', 'readwrite');
   const store = tx.objectStore('categories');
   await store.delete(id);
+  await tx.done;
+};
+
+// Clear all categories
+export const clearCategories = async () => {
+  const db = await initDB();
+  const tx = db.transaction('categories', 'readwrite');
+  const store = tx.objectStore('categories');
+  await store.clear();
+  await tx.done;
+};
+
+// Import categories (replace all with new data)
+export const syncCategoriesOnDB = async (categories) => {
+  const db = await initDB();
+  const tx = db.transaction('categories', 'readwrite');
+  const store = tx.objectStore('categories');
+  
+  // Clear existing categories
+  await store.clear();
+  
+  // Add all new categories
+  for (const category of categories) {
+    await store.add(category);
+  }
+  
   await tx.done;
 };
 
@@ -387,4 +452,59 @@ export const exportTodosAsCSV = async () => {
   
   // Clean up
   document.body.removeChild(link);
+};
+
+// Settings functions
+export const getAllSettings = async () => {
+  try {
+    const db = await initDB();
+    const tx = db.transaction('settings', 'readonly');
+    const store = tx.objectStore('settings');
+    const settings = await store.getAll();
+    return settings;
+  } catch (error) {
+    console.error('Error getting settings from IndexedDB:', error);
+    return [];
+  }
+};
+
+export const getSetting = async (key) => {
+  try {
+    const db = await initDB();
+    const tx = db.transaction('settings', 'readonly');
+    const store = tx.objectStore('settings');
+    const setting = await store.get(key);
+    return setting ? setting.value : null;
+  } catch (error) {
+    console.error('Error getting setting from IndexedDB:', error);
+    return null;
+  }
+};
+
+export const saveSetting = async (key, value) => {
+  try {
+    const db = await initDB();
+    const tx = db.transaction('settings', 'readwrite');
+    const store = tx.objectStore('settings');
+    await store.put({ key, value, timestamp: new Date().getTime() });
+    await tx.done;
+    console.log('Setting saved:', key, value);
+  } catch (error) {
+    console.error('Error saving setting to IndexedDB:', error);
+    throw error;
+  }
+};
+
+export const deleteSetting = async (key) => {
+  try {
+    const db = await initDB();
+    const tx = db.transaction('settings', 'readwrite');
+    const store = tx.objectStore('settings');
+    await store.delete(key);
+    await tx.done;
+    console.log('Setting deleted:', key);
+  } catch (error) {
+    console.error('Error deleting setting from IndexedDB:', error);
+    throw error;
+  }
 }; 

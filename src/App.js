@@ -6,6 +6,7 @@ import Categories from './components/Categories';
 import Integrations from './components/Integrations';
 import Import from './components/Import';
 import Export from './components/Export';
+import Settings from './components/Settings';
 import SideDrawer from './components/SideDrawer';
 import NetworkStatus from './components/NetworkStatus';
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -30,6 +31,8 @@ function App() {
         return <Import />;
       case 'export':
         return <Export />;
+      case 'settings':
+        return <Settings />;
       case 'todos':
       default:
         return <TodoList />;

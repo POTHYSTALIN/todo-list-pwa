@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Card, Button, Form, Modal, Badge } from 'react-bootstrap';
+import { Container, Row, Col, Card, Button, Form, Modal, Badge, Alert } from 'react-bootstrap';
 import PageHeader from './PageHeader';
-import { getAllCategories, addCategory, updateCategory, deleteCategory, getAllTodos } from '../utils/db';
+import { getAllCategories, addCategory, updateCategory, deleteCategory, getAllTodos, getSetting, syncCategoriesOnDB } from '../utils/db';
+import { syncCategories } from '../utils/api';
 
 const Categories = () => {
   const [categories, setCategories] = useState([]);
@@ -14,10 +15,44 @@ const Categories = () => {
     description: '',
     color: 'primary'
   });
+  const [syncing, setSyncing] = useState(false);
+  const [syncMessage, setSyncMessage] = useState('');
+  const [showSyncAlert, setShowSyncAlert] = useState(false);
+  const [isApiConnected, setIsApiConnected] = useState(false);
   
   // Refresh category counts
   const refreshCounts = async () => {
     await loadCategories();
+  };
+
+  // Sync categories with Google Drive via backend API
+  const handleSync = async () => {
+    try {
+      setSyncing(true);
+      setShowSyncAlert(false);
+
+      // Get current categories
+      const currentCategories = await getAllCategories();
+
+      // Sync with backend API
+      const mergedCategories = await syncCategories(currentCategories);
+
+      // Import merged categories to IndexedDB
+      await syncCategories(mergedCategories);
+
+      // Refresh UI with synced data
+      await loadCategories();
+
+      setSyncMessage('Categories synced successfully!');
+      setShowSyncAlert(true);
+      setTimeout(() => setShowSyncAlert(false), 3000);
+    } catch (error) {
+      console.error('Sync error:', error);
+      setSyncMessage(`Sync failed: ${error.message}`);
+      setShowSyncAlert(true);
+    } finally {
+      setSyncing(false);
+    }
   };
   
   const headerActions = [
@@ -27,6 +62,14 @@ const Categories = () => {
       title: 'Refresh Counts',
       icon: 'bi-arrow-clockwise',
       label: 'Refresh'
+    },
+    {
+      variant: 'success',
+      onClick: handleSync,
+      disabled: syncing || !isApiConnected,
+      title: isApiConnected ? 'Sync with Google Drive' : 'API not connected. Go to Integrations to connect.',
+      icon: syncing ? 'bi-arrow-repeat' : 'bi-cloud-arrow-up',
+      label: syncing ? 'Syncing...' : 'Sync'
     },
     {
       variant: 'primary',
@@ -88,9 +131,16 @@ const Categories = () => {
     }
   };
 
-  // Load categories on component mount
+  // Load categories and API connection status on component mount
   useEffect(() => {
+    const loadApiConnectionStatus = async () => {
+      const apiConnected = await getSetting('apiConnected');
+      setIsApiConnected(apiConnected === true);
+    };
+    
     loadCategories();
+    loadApiConnectionStatus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleSubmit = async (e) => {
@@ -157,6 +207,18 @@ const Categories = () => {
         page="categories"
         actions={headerActions}
       />
+      
+      {/* Sync Alert */}
+      {showSyncAlert && (
+        <Alert 
+          variant={syncMessage.includes('failed') || syncMessage.includes('configure') ? 'danger' : 'success'} 
+          dismissible 
+          onClose={() => setShowSyncAlert(false)}
+          className="mb-3"
+        >
+          {syncMessage}
+        </Alert>
+      )}
       
       {/* Error message */}
       {error && (

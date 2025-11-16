@@ -16,6 +16,8 @@ const PageHeader = ({
         return 'bi-upload';
       case 'export':
         return 'bi-download';
+      case 'settings':
+        return 'bi-gear';
       case 'todos':
       default:
         return 'bi-check2-square';
@@ -32,6 +34,8 @@ const PageHeader = ({
         return 'Import';
       case 'export':
         return 'Export';
+      case 'settings':
+        return 'Settings';
       case 'todos':
       default:
         return 'Todos';
@@ -48,6 +52,8 @@ const PageHeader = ({
         return 'Import data from JSON';
       case 'export':
         return 'Export all your data as JSON';
+      case 'settings':
+        return 'Configure your application preferences';
       case 'todos':
       default:
         return 'Manage your tasks, even when offline!';

@@ -7,7 +7,8 @@ const SideDrawer = ({ show, onHide, onNavigate, currentPage }) => {
     { id: 'categories', label: 'Categories', icon: 'bi-collection' },
     { id: 'integrations', label: 'Integrations', icon: 'bi-plug' },
     { id: 'import', label: 'Import', icon: 'bi-upload' },
-    { id: 'export', label: 'Export', icon: 'bi-download' }
+    { id: 'export', label: 'Export', icon: 'bi-download' },
+    { id: 'settings', label: 'Settings', icon: 'bi-gear' }
   ];
 
   return (

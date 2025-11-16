@@ -1,26 +1,35 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Card, Form, Button, Modal, Table } from 'react-bootstrap';
+import { Card, Form, Button, Modal, Table, Alert } from 'react-bootstrap';
 import PageHeader from './PageHeader';
-import { saveIntegration, getIntegration, deleteIntegration } from '../utils/db';
+import { saveIntegration, getIntegration, deleteIntegration, getSetting, saveSetting } from '../utils/db';
 
 const Integrations = () => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [credentialContent, setCredentialContent] = useState('');
+  const [sharedFolderId, setSharedFolderId] = useState('');
+  const [jsonFileId, setJsonFileId] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+  const [showError, setShowError] = useState(false);
+  const [connecting, setConnecting] = useState(false);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
-    // Load saved credentials on mount
-    const loadSavedCredentials = async () => {
-      const content = await getIntegration('google');
-      if (content) {
-        setIsConnected(true);
-        setCredentialContent(content);
-        console.log('Loaded credentials from IndexedDB');
+    // Load saved connection status and config on mount
+    const loadSavedData = async () => {
+      const apiConnected = await getSetting('apiConnected');
+      setIsConnected(apiConnected === true);
+      
+      const googleData = await getIntegration('google');
+      if (googleData) {
+        setCredentialContent(googleData.credentials || '');
+        setSharedFolderId(googleData.sharedFolderId || '');
+        setJsonFileId(googleData.jsonFileId || '');
+        console.log('Loaded Google integration data from IndexedDB');
       }
     };
-    loadSavedCredentials();
+    loadSavedData();
   }, []);
 
   const handleFileChange = async (e) => {
@@ -31,31 +40,90 @@ const Integrations = () => {
     }
   };
 
-  const handleSubmit = async () => {
-    if (selectedFile) {
-      // Read the file content directly
-      const reader = new FileReader();
-      reader.onload = async (event) => {
-        const fileContent = event.target.result;
-        
-        await saveIntegration('google', fileContent);
+  const handleConnect = async () => {
+    try {
+      setConnecting(true);
+      setShowError(false);
+      setErrorMessage('');
+
+      // Get API URL from settings
+      const apiUrl = await getSetting('apiUrl');
+      
+      if (!apiUrl) {
+        setErrorMessage('API not configured yet');
+        setShowError(true);
+        setIsConnected(false);
+        return;
+      }
+
+      // Try to connect to API health endpoint
+      const response = await fetch(`${apiUrl}/health`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        },
+        cache: 'no-store'
+      });
+
+      // Accept 200 (OK) and 304 (Not Modified) as successful responses
+      if (!response.ok && response.status !== 304) {
+        throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+      }
+
+      // For 304, we consider it connected (cached response is fine)
+      if (response.status === 304) {
         setIsConnected(true);
-        setCredentialContent(fileContent);
-        setSelectedFile(null);
-        if (fileInputRef.current) {
-          fileInputRef.current.value = '';
-        }
-        console.log('Saved credentials content to IndexedDB');
-      };
-      reader.readAsText(selectedFile);
+        setShowError(false);
+        console.log('Connected to API (cached):', apiUrl);
+        return;
+      }
+
+      // Parse response and validate
+      const data = await response.json();
+      
+      // Check if response has correct structure
+      if (data.status === 'ok' && data.message === 'One Nest API is running') {
+        setIsConnected(true);
+        setShowError(false);
+        // Save connection status to settings
+        await saveSetting('apiConnected', true);
+        console.log('Connected to API:', apiUrl);
+      } else {
+        throw new Error('Invalid API response: Expected status "ok" and message "One Nest API is running"');
+      }
+    } catch (error) {
+      setIsConnected(false);
+      // Save disconnected status to settings
+      await saveSetting('apiConnected', false);
+      
+      setErrorMessage("Server error, check the API");
+      setShowError(true);
+      console.error('Connection error:', error);
+    } finally {
+      setConnecting(false);
     }
   };
 
   const handleDisconnect = async () => {
-    await deleteIntegration('google');
     setIsConnected(false);
-    setCredentialContent('');
-    console.log('Disconnected and removed credentials from IndexedDB');
+    setShowError(false);
+    setErrorMessage('');
+    // Save disconnected status to settings
+    await saveSetting('apiConnected', false);
+    console.log('Disconnected from API');
+  };
+
+  const handleSaveConfig = async () => {
+    const googleData = {
+      credentials: credentialContent,
+      sharedFolderId,
+      jsonFileId
+    };
+    await saveIntegration('google', googleData);
+    console.log('Saved Google configuration to IndexedDB');
   };
 
   const handleShowContent = () => {
@@ -72,9 +140,23 @@ const Integrations = () => {
         page="integrations"
       />
       
+      {/* Error Alert */}
+      {showError && (
+        <Alert 
+          variant="danger" 
+          dismissible 
+          onClose={() => setShowError(false)}
+          className="mb-3"
+        >
+          <i className="bi bi-exclamation-triangle-fill me-2"></i>
+          {errorMessage}
+        </Alert>
+      )}
+      
       <Card className="mb-3">
         <Card.Body>
-          <div className="d-flex flex-wrap align-items-center justify-content-between gap-2">
+          {/* Header with Icon, Name, Status and Actions */}
+          <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
             {/* Left: Icon, Name and Status */}
             <div className="d-flex align-items-center flex-grow-1 flex-md-grow-0 gap-2">
               <i className="bi bi-google fs-4 text-primary"></i>
@@ -96,51 +178,29 @@ const Integrations = () => {
             <div className="d-flex align-items-center gap-2 integration-actions">
               {!isConnected ? (
                 <>
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handleFileChange}
-                    accept=".json"
-                    style={{ display: 'none' }}
-                    id="google-credentials-file"
-                  />
-                  <label 
-                    htmlFor="google-credentials-file" 
-                    className="btn btn-outline-secondary btn-sm mb-0 flex-grow-1 flex-md-grow-0"
-                    style={{ minWidth: '200px' }}
-                  >
-                    <i className="bi bi-file-earmark me-1"></i>
-                    {selectedFile ? selectedFile.name : 'Choose File'}
-                  </label>
                   <Button 
                     variant="primary" 
                     size="sm"
-                    onClick={handleSubmit}
-                    disabled={!selectedFile}
+                    onClick={handleConnect}
+                    disabled={connecting}
                     className="flex-shrink-0"
                   >
-                    <i className="bi bi-plug me-1"></i>
-                    Connect
+                    <i className={`bi ${connecting ? 'bi-arrow-repeat' : 'bi-plug'} me-1`}></i>
+                    {connecting ? 'Connecting...' : 'Connect'}
                   </Button>
                 </>
               ) : (
                 <>
-                  <Button 
-                    variant="info" 
-                    size="sm"
-                    onClick={handleShowContent}
-                  >
-                    <i className="bi bi-eye me-1"></i>
-                    View
-                  </Button>
-                  <Button 
-                    variant="danger" 
-                    size="sm"
-                    onClick={handleDisconnect}
-                  >
-                    <i className="bi bi-x-circle me-1"></i>
-                    Disconnect
-                  </Button>
+                  {isConnected && (
+                    <Button 
+                      variant="danger" 
+                      size="sm"
+                      onClick={handleDisconnect}
+                    >
+                      <i className="bi bi-x-circle me-1"></i>
+                      Disconnect
+                    </Button>
+                  )}
                 </>
               )}
             </div>
