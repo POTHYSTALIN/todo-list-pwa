@@ -2,7 +2,7 @@ import { openDB } from 'idb';
 
 // Database name and version
 const DB_NAME = 'todo-list-db';
-const DB_VERSION = 6; // Increment version to trigger upgrade
+const DB_VERSION = 7; // Increment version to trigger upgrade for deviceId
 
 // Default categories
 const DEFAULT_CATEGORIES = [
@@ -36,10 +36,80 @@ const DEFAULT_CATEGORIES = [
   }
 ];
 
+// Generate a unique device ID
+const generateDeviceId = () => {
+  return `device_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+};
+
+// Get or create device ID
+export const getDeviceId = async () => {
+  const db = await openDB(DB_NAME, DB_VERSION);
+  const tx = db.transaction('settings', 'readonly');
+  const store = tx.objectStore('settings');
+  const setting = await store.get('deviceId');
+  await tx.done;
+  
+  if (setting && setting.value) {
+    return setting.value;
+  }
+  
+  // Generate new device ID if not exists
+  const newDeviceId = generateDeviceId();
+  await saveSetting('deviceId', newDeviceId);
+  return newDeviceId;
+};
+
+// Migrate existing todos and categories to include deviceId
+const migrateDeviceIds = async (db) => {
+  try {
+    const currentDeviceId = await getDeviceId();
+    
+    // Migrate todos
+    const todosTx = db.transaction('todos', 'readwrite');
+    const todosStore = todosTx.objectStore('todos');
+    const allTodos = await todosStore.getAll();
+    
+    let todosUpdated = 0;
+    for (const todo of allTodos) {
+      if (!todo.deviceId) {
+        todo.deviceId = currentDeviceId;
+        await todosStore.put(todo);
+        todosUpdated++;
+      }
+    }
+    await todosTx.done;
+    
+    if (todosUpdated > 0) {
+      console.log(`Migrated ${todosUpdated} todos with deviceId`);
+    }
+    
+    // Migrate categories
+    const categoriesTx = db.transaction('categories', 'readwrite');
+    const categoriesStore = categoriesTx.objectStore('categories');
+    const allCategories = await categoriesStore.getAll();
+    
+    let categoriesUpdated = 0;
+    for (const category of allCategories) {
+      if (!category.deviceId) {
+        category.deviceId = currentDeviceId;
+        await categoriesStore.put(category);
+        categoriesUpdated++;
+      }
+    }
+    await categoriesTx.done;
+    
+    if (categoriesUpdated > 0) {
+      console.log(`Migrated ${categoriesUpdated} categories with deviceId`);
+    }
+  } catch (error) {
+    console.error('Error migrating deviceIds:', error);
+  }
+};
+
 // Initialize the database
 export const initDB = async () => {
   const db = await openDB(DB_NAME, DB_VERSION, {
-    upgrade(db, oldVersion, newVersion) {
+    upgrade(db, oldVersion, newVersion, transaction) {
       console.log(`Upgrading database from version ${oldVersion} to ${newVersion}`);
       
       // Create the todos object store if it doesn't exist
@@ -55,6 +125,13 @@ export const initDB = async () => {
         store.createIndex('timestamp', 'timestamp');
         store.createIndex('priority', 'priority');
         store.createIndex('category', 'category');
+        store.createIndex('deviceId', 'deviceId');
+      } else if (oldVersion < 7) {
+        // Add deviceId index to existing todos store
+        const todosStore = transaction.objectStore('todos');
+        if (!todosStore.indexNames.contains('deviceId')) {
+          todosStore.createIndex('deviceId', 'deviceId');
+        }
       }
 
       // Create the categories object store if it doesn't exist
@@ -68,6 +145,13 @@ export const initDB = async () => {
         // Create indexes for categories store
         categoriesStore.createIndex('name', 'name');
         categoriesStore.createIndex('color', 'color');
+        categoriesStore.createIndex('deviceId', 'deviceId');
+      } else if (oldVersion < 7) {
+        // Add deviceId index to existing categories store
+        const categoriesStore = transaction.objectStore('categories');
+        if (!categoriesStore.indexNames.contains('deviceId')) {
+          categoriesStore.createIndex('deviceId', 'deviceId');
+        }
       }
 
       // Create the integrations object store if it doesn't exist
@@ -88,6 +172,9 @@ export const initDB = async () => {
     },
   });
   
+  // Migrate existing records to include deviceId
+  await migrateDeviceIds(db);
+  
   return db;
 };
 
@@ -100,11 +187,13 @@ export const getDB = async () => {
 export const addTodo = async (todo) => {
   try {
     const db = await initDB();
+    const deviceId = await getDeviceId();
     const tx = db.transaction('todos', 'readwrite');
     const store = tx.objectStore('todos');
     const todoWithTimestamp = {
       ...todo,
       timestamp: new Date().getTime(),
+      deviceId,
     };
     console.log('Adding todo to IndexedDB:', todoWithTimestamp);
     const id = await store.add(todoWithTimestamp);
@@ -186,9 +275,14 @@ export const getTodo = async (id) => {
 // Update a todo
 export const updateTodo = async (todo) => {
   const db = await initDB();
+  const deviceId = await getDeviceId();
   const tx = db.transaction('todos', 'readwrite');
   const store = tx.objectStore('todos');
-  await store.put(todo);
+  const todoWithDeviceId = {
+    ...todo,
+    deviceId,
+  };
+  await store.put(todoWithDeviceId);
   await tx.done;
 };
 
@@ -213,6 +307,7 @@ export const clearTodos = async () => {
 // Import todos (replace all with new data)
 export const syncTodosOnDB = async (todos) => {
   const db = await initDB();
+  const currentDeviceId = await getDeviceId();
   
   // First transaction: clear existing todos
   const clearTx = db.transaction('todos', 'readwrite');
@@ -224,8 +319,13 @@ export const syncTodosOnDB = async (todos) => {
   const store = addTx.objectStore('todos');
   for (const todo of todos) {
     // Remove id to let IndexedDB auto-generate sequential IDs
+    // Keep existing deviceId or use current device's ID if not present
     const { id, ...todoWithoutId } = todo;
-    await store.add(todoWithoutId);
+    const todoToAdd = {
+      ...todoWithoutId,
+      deviceId: todo.deviceId || currentDeviceId,
+    };
+    await store.add(todoToAdd);
   }
   await addTx.done;
 };
@@ -415,7 +515,7 @@ export const exportTodosAsCSV = async () => {
   const todos = await getAllTodos();
   
   // Define the column headers
-  const headers = ['id', 'title', 'description', 'priority', 'category', 'completed', 'timestamp'];
+  const headers = ['id', 'title', 'description', 'priority', 'category', 'completed', 'timestamp', 'deviceId'];
   
   // Convert the data to CSV format
   const csvContent = [
@@ -431,7 +531,8 @@ export const exportTodosAsCSV = async () => {
         todo.priority || 'Medium', // Default to Medium if no priority
         todo.category || 'None', // Default to None if no category
         todo.completed ? 'true' : 'false',
-        new Date(todo.timestamp).toISOString()
+        new Date(todo.timestamp).toISOString(),
+        todo.deviceId || ''
       ].join(',');
     })
   ].join('\n');
