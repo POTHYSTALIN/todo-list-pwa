@@ -63,31 +63,7 @@
 
 /* Responsive adjustments */
 @media (max-width: 576px) {
-  .list-group-item.todo-item {
-    flex-direction: initial;
-    align-items: initial;
-  }
-  
-  .todo-item-container {
-    flex-direction: column;
-  }
-  
-  .todo-content {
-    width: 100%;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-  }
-  
-  /* Show action buttons on mobile without hover */
-  .todo-item .todo-actions {
-    opacity: 1;
-    transform: translateX(0);
-    width: 100%;
-    flex-direction: row;
-  }
-  
-  /* Make action buttons equal width on mobile */
-  .todo-item .todo-actions .action-btn {
-    flex: 1;
+  .todo-item {
     padding: 0.75rem;
   }
   
@@ -137,92 +113,102 @@
 /* Todo item layout and hover effects */
 .todo-item {
   position: relative;
-  overflow: hidden;
-  padding: 0;
+  padding: 0.75rem 1rem;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+  border-left: 3px solid transparent;
 }
 
-.todo-item-container {
-  display: flex;
+.todo-item:hover {
+  background-color: rgba(0, 0, 0, 0.02);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.todo-item-view {
   width: 100%;
-  height: 100%;
 }
 
-.todo-content {
-  flex: 1;
-  padding: 1rem;
-  /* Removing the vertical border */
-  /* border-right: 1px solid rgba(0, 0, 0, 0.05); */
+/* Smaller badges for compact layout */
+.badge-sm {
+  font-size: 0.7rem;
+  padding: 0.25rem 0.5rem;
 }
 
-.todo-actions {
-  display: flex;
-  opacity: 0;
-  transform: translateX(10px);
-  transition: all 0.3s ease;
+.todo-item h6 {
+  font-size: 1rem;
+  font-weight: 500;
 }
 
-/* Make each action button take full height */
-.todo-actions .action-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  border: none;
-  border-radius: 0;
-  margin: 0;
-  /* Doubling the width of action buttons */
-  padding: 0 2.5rem;
+/* Priority indicator - colored circle */
+.priority-indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+/* Three dots menu button */
+.todo-menu-btn {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0.25rem 0.5rem !important;
   transition: all 0.2s ease;
+  opacity: 0.6;
 }
 
-/* Hide text labels for action buttons */
-.todo-actions .action-btn .btn-text {
+.todo-menu-btn:hover,
+.todo-menu-btn:focus,
+.todo-menu-btn:active {
+  background: rgba(0, 0, 0, 0.05) !important;
+  opacity: 1 !important;
+  box-shadow: none !important;
+}
+
+.todo-menu-btn::after {
   display: none;
 }
 
-/* Make icons bigger */
-.todo-actions .action-btn i {
-  font-size: 1.25rem;
-  margin-right: 0;
-  transition: transform 0.2s ease;
+/* Dropdown menu styling */
+.dropdown-menu {
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  padding: 0.5rem 0;
 }
 
-/* Icon grow on hover */
-.todo-actions .action-btn:hover i {
-  transform: scale(1.2);
+.dropdown-item {
+  padding: 0.5rem 1rem;
+  transition: all 0.2s ease;
 }
 
-/* Edit button styling */
-.todo-actions .action-btn:first-child {
-  background-color: rgba(13, 110, 253, 0.2);
-  color: #0d6efd;
+.dropdown-item:hover {
+  background-color: rgba(0, 0, 0, 0.05);
 }
 
-.todo-actions .action-btn:first-child:hover {
-  background-color: rgba(13, 110, 253, 0.3);
+.dropdown-item i {
+  width: 1.25rem;
 }
 
-/* Delete button styling */
-.todo-actions .action-btn:last-child {
-  background-color: rgba(220, 53, 69, 0.2);
-  color: #dc3545;
+/* Priority-based left border */
+.todo-item:has(.badge.bg-danger) {
+  border-left-color: #dc3545;
 }
 
-.todo-actions .action-btn:last-child:hover {
-  background-color: rgba(220, 53, 69, 0.3);
+.todo-item:has(.badge.bg-warning) {
+  border-left-color: #ffc107;
 }
 
-.todo-item:hover .todo-actions {
-  opacity: 1;
-  transform: translateX(0);
+.todo-item:has(.badge.bg-primary) {
+  border-left-color: #0d6efd;
 }
 
-.todo-item .action-btn {
-  transform: scale(1);
+.todo-item:has(.badge.bg-info) {
+  border-left-color: #0dcaf0;
 }
 
-.todo-item:hover .action-btn {
-  transform: scale(1);
+.todo-item:has(.badge.bg-secondary) {
+  border-left-color: #6c757d;
 }
 
 /* Side Drawer Styles */

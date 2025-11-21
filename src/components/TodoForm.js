@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Form, Button, Card } from 'react-bootstrap';
+import { Form, Button, Modal } from 'react-bootstrap';
 import { useTodoContext } from '../contexts/TodoContext';
 import { getAllCategories } from '../utils/db';
 import MarkdownEditor from './MarkdownEditor';
 
-const TodoForm = ({ onComplete }) => {
+const TodoForm = ({ show, onComplete }) => {
   const { addTodo } = useTodoContext();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -60,13 +60,15 @@ const TodoForm = ({ onComplete }) => {
   };
 
   return (
-    <Card className="mb-4">
-      <Card.Body className="text-start">
-        <Card.Title>
+    <Modal show={show} onHide={onComplete} size="lg">
+      <Modal.Header closeButton>
+        <Modal.Title>
           <i className="bi bi-plus-circle me-2"></i>
           Add New Todo
-        </Card.Title>
-        <Form noValidate validated={validated} onSubmit={handleSubmit}>
+        </Modal.Title>
+      </Modal.Header>
+      <Form noValidate validated={validated} onSubmit={handleSubmit}>
+        <Modal.Body>
           <Form.Group className="mb-3" controlId="todoTitle">
             <Form.Label>
               <i className="bi bi-card-heading me-1"></i>
@@ -138,30 +140,27 @@ const TodoForm = ({ onComplete }) => {
               </Form.Group>
             </div>
           </div>
-
-          <div className="d-flex justify-content-end">
-            <Button 
-              variant="secondary" 
-              className="me-2 btn-icon-text" 
-              onClick={onComplete}
-              title="Cancel"
-            >
-              <i className="bi bi-x-circle"></i>
-              <span className="btn-text">Cancel</span>
-            </Button>
-            <Button 
-              variant="primary" 
-              type="submit"
-              className="btn-icon-text"
-              title="Add Todo"
-            >
-              <i className="bi bi-save"></i>
-              <span className="btn-text">Add Todo</span>
-            </Button>
-          </div>
-        </Form>
-      </Card.Body>
-    </Card>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button 
+            variant="secondary" 
+            onClick={onComplete}
+            title="Cancel"
+          >
+            <i className="bi bi-x-circle me-1"></i>
+            Cancel
+          </Button>
+          <Button 
+            variant="primary" 
+            type="submit"
+            title="Add Todo"
+          >
+            <i className="bi bi-save me-1"></i>
+            Add Todo
+          </Button>
+        </Modal.Footer>
+      </Form>
+    </Modal>
   );
 };
 

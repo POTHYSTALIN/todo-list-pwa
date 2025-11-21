@@ -226,12 +226,8 @@ const TodoList = () => {
         </div>
       )}
       
-      {/* Todo Form */}
-      {showForm && (
-        <div className="mb-4">
-          <TodoForm onComplete={() => setShowForm(false)} />
-        </div>
-      )}
+      {/* Todo Form Modal */}
+      <TodoForm show={showForm} onComplete={() => setShowForm(false)} />
       
       {/* Filter and Sort controls */}
       <div className="mb-3">
