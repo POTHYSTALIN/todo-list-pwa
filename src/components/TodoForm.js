@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Form, Button, Card } from 'react-bootstrap';
 import { useTodoContext } from '../contexts/TodoContext';
 import { getAllCategories } from '../utils/db';
+import MarkdownEditor from './MarkdownEditor';
 
 const TodoForm = ({ onComplete }) => {
   const { addTodo } = useTodoContext();
@@ -90,12 +91,11 @@ const TodoForm = ({ onComplete }) => {
               <i className="bi bi-card-text me-1"></i>
               Description (optional)
             </Form.Label>
-            <Form.Control
-              as="textarea"
-              rows={3}
-              placeholder="Enter description"
+            <MarkdownEditor
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              onChange={setDescription}
+              height="250px"
+              placeholder="Enter description (supports Markdown)"
             />
           </Form.Group>
 

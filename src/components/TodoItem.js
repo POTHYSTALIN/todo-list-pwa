@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { ListGroup, Form, Button, Badge } from 'react-bootstrap';
 import { useTodoContext } from '../contexts/TodoContext';
 import { getAllCategories } from '../utils/db';
+import MarkdownEditor from './MarkdownEditor';
+import MarkdownViewer from './MarkdownViewer';
 
 const TodoItem = ({ todo }) => {
   const { toggleTodo, deleteTodo, updateTodo } = useTodoContext();
@@ -116,11 +118,11 @@ const TodoItem = ({ todo }) => {
           </Form.Group>
           <Form.Group className="mb-3">
             <Form.Label>Description</Form.Label>
-            <Form.Control
-              as="textarea"
-              rows={2}
+            <MarkdownEditor
               value={editedDescription}
-              onChange={(e) => setEditedDescription(e.target.value)}
+              onChange={setEditedDescription}
+              height="200px"
+              placeholder="Enter description (supports Markdown)"
             />
           </Form.Group>
           <div className="row">
@@ -207,7 +209,9 @@ const TodoItem = ({ todo }) => {
                   )}
                 </div>
                 {todo.description && (
-                  <p className="text-muted mb-1">{todo.description}</p>
+                  <div className="text-muted mb-1">
+                    <MarkdownViewer content={todo.description} />
+                  </div>
                 )}
                 <small className="text-muted">
                   <i className="bi bi-clock me-1"></i>

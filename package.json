@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "private": true,
   "dependencies": {
+    "@toast-ui/react-editor": "^3.2.3",
     "bootstrap": "^5.3.6",
     "bootstrap-icons": "^1.13.1",
     "cra-template-pwa": "2.0.0",
